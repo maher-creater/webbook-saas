@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — 2030B P2P Pairing</title>
+<meta name="description" content="Restricted admin panel: validate pending transactions, view users, edit configuration." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Sign-in gate -->
+    <section id="adminGate" class="b30-card max-w-md mx-auto p-6 text-center">
+      <span data-b30-icon="admin" data-size="64" class="inline-block"></span>
+      <h1 class="mt-3 font-display font-extrabold text-2xl" data-i18n="admin.signin.title">Restricted area</h1>
+      <p class="mt-2 text-sm opacity-70">Default password is <code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-white/10">admin2030</code> (see config.json).</p>
+      <form id="adminLogin" class="mt-5 space-y-3">
+        <input type="password" class="b30-input" required name="pw" placeholder="Admin password">
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2.5 text-sm font-semibold w-full" data-i18n="admin.signin.submit">Sign in</button>
+      </form>
+    </section>
+
+    <!-- Panel -->
+    <section id="adminPanel" class="hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h1 class="font-display font-extrabold text-3xl" data-i18n="admin.title">Admin panel</h1>
+        <div class="flex items-center gap-2">
+          <button id="seedDemoBtn" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1">
+            <i data-lucide="database" class="w-3.5 h-3.5"></i> Seed demo
+          </button>
+          <button id="adminLogout" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> <span data-i18n="cta.signOut">Sign out</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat row -->
+      <div class="grid sm:grid-cols-3 gap-4 mt-6">
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="admin.users.count">Users</p>
+          <p class="wb-stat-num font-display text-3xl" id="kpiUsers">0</p>
+        </div>
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="admin.txs.count">Pending transactions</p>
+          <p class="wb-stat-num font-display text-3xl" id="kpiPending">0</p>
+        </div>
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70">Verified pairings</p>
+          <p class="wb-stat-num font-display text-3xl" id="kpiVerified">0</p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="mt-8 flex items-center gap-2 border-b border-slate-200/60 dark:border-white/10 overflow-x-auto" id="adminTabs">
+        <button data-tab="pending" class="tab is-active px-4 py-2 -mb-px border-b-2 border-blue-500 text-blue-500 font-semibold text-sm">
+          <i data-lucide="clock" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.transactions">Pending transactions</span>
+        </button>
+        <button data-tab="users" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
+          <i data-lucide="users" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.users">Users</span>
+        </button>
+        <button data-tab="config" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
+          <i data-lucide="settings-2" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.config">Configuration</span>
+        </button>
+      </div>
+
+      <!-- Pending transactions -->
+      <div data-tab-panel="pending" class="mt-6">
+        <div id="pendingList" class="space-y-3"></div>
+        <p id="pendingEmpty" class="b30-card text-center py-10 hidden opacity-70">No pending transactions.</p>
+      </div>
+
+      <!-- Users -->
+      <div data-tab-panel="users" class="mt-6 hidden">
+        <div class="b30-card overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase opacity-70">
+              <tr>
+                <th class="text-left p-2">User</th>
+                <th class="text-left p-2">Country</th>
+                <th class="text-right p-2">Level</th>
+                <th class="text-right p-2">Credits</th>
+                <th class="text-right p-2">Pairings</th>
+                <th class="text-right p-2">Joined</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Config -->
+      <div data-tab-panel="config" class="mt-6 hidden">
+        <div class="b30-card">
+          <p class="text-sm opacity-70 mb-2">Edit <code>config.json</code> live (saved to <code>localStorage</code> in this demo; PHP backend writes the file).</p>
+          <textarea id="configEditor" class="b30-input font-mono text-xs" rows="22"></textarea>
+          <div class="mt-3 flex items-center gap-2">
+            <button id="configSave" class="wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold">Save changes</button>
+            <button id="configReset" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold">Reset to file</button>
+            <span id="configStatus" class="text-xs opacity-70 ml-2"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+(function () {
+  let cfg = null;
+  function whenReady(fn) {
+    Promise.all([
+      new Promise(r => window.B30Config.onLoad(r)),
+      window.B30I18n.ready(),
+      window.B30Store.ready()
+    ]).then(([c]) => { cfg = c; fn(c); });
+  }
+
+  function showPanel() {
+    document.getElementById('adminGate').classList.add('hidden');
+    document.getElementById('adminPanel').classList.remove('hidden');
+    refreshAll();
+  }
+  function showGate() {
+    document.getElementById('adminPanel').classList.add('hidden');
+    document.getElementById('adminGate').classList.remove('hidden');
+  }
+
+  async function refreshAll() {
+    const users = await window.B30Store.listUsers();
+    const txs   = await window.B30Store.listTransactions();
+    const pairs = await window.B30Store.listPairings();
+
+    document.getElementById('kpiUsers').textContent = users.length;
+    const pending = txs.filter(t => t.status === 'pending');
+    document.getElementById('kpiPending').textContent = pending.length;
+    document.getElementById('kpiVerified').textContent = pairs.filter(p => p.status === 'verified').length;
+
+    renderPending(pending, users);
+    renderUsers(users);
+    renderConfig();
+    if (window.B30Logos) window.B30Logos.renderAuto();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function renderPending(pending, users) {
+    const container = document.getElementById('pendingList');
+    const empty = document.getElementById('pendingEmpty');
+    if (pending.length === 0) {
+      container.innerHTML = ''; empty.classList.remove('hidden'); return;
+    }
+    empty.classList.add('hidden');
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    // Render with screenshot thumbnail
+    const blocks = await Promise.all(pending.map(async tx => {
+      const u = userMap[tx.user_id] || { email: 'unknown' };
+      const shot = tx.screenshot_id ? await window.B30Store.getScreenshot(tx.screenshot_id) : null;
+      return `
+        <div class="b30-card flex flex-wrap items-start gap-4">
+          <a href="${shot ? shot.data_url : '#'}" target="_blank" class="block w-28 h-28 rounded-lg bg-slate-200 dark:bg-white/5 overflow-hidden flex-shrink-0">
+            ${shot ? `<img src="${shot.data_url}" alt="proof" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center text-xs opacity-60">no image</div>'}
+          </a>
+          <div class="flex-1 min-w-[220px]">
+            <p class="text-sm opacity-70">${u.email} · ${tx.platform.toUpperCase()}</p>
+            <p class="font-semibold">${tx.type.toUpperCase()} · ${tx.amount_usdt} USDT for ${tx.amount_fiat} ${tx.fiat_currency}</p>
+            <p class="text-xs opacity-60 mt-1">Fee ${tx.fee_percent}% · total ${tx.total_cost.toFixed(2)} ${tx.fiat_currency} · ${new Date(tx.transaction_date).toLocaleDateString()}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button data-action="approve" data-tx="${tx.id}" class="wb-btn-primary rounded-lg px-3 py-2 text-xs font-semibold">
+              <i data-lucide="check" class="w-3.5 h-3.5 inline"></i> <span data-i18n="admin.approve">Approve</span>
+            </button>
+            <button data-action="reject" data-tx="${tx.id}" class="wb-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold">
+              <i data-lucide="x" class="w-3.5 h-3.5 inline"></i> <span data-i18n="admin.reject">Reject</span>
+            </button>
+          </div>
+        </div>`;
+    }));
+    container.innerHTML = blocks.join('');
+    container.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.tx; const act = btn.dataset.action;
+        let notes = '';
+        if (act === 'reject') {
+          const { value } = await Swal.fire({ title: window.B30I18n.t('admin.notes') || 'Reason', input: 'text' });
+          notes = value || '';
+        }
+        await window.B30Store.setTransactionStatus(id, act === 'approve' ? 'verified' : 'rejected', notes);
+        Swal.fire({ icon:'success', timer:1100, showConfirmButton:false,
+          title: window.B30I18n.t(act === 'approve' ? 'admin.toast.approved' : 'admin.toast.rejected') || 'Done' });
+        refreshAll();
+      });
+    });
+  }
+
+  function renderUsers(users) {
+    const tb = document.getElementById('usersTbody');
+    if (users.length === 0) {
+      tb.innerHTML = `<tr><td class="p-3 text-center opacity-60" colspan="6">No users yet.</td></tr>`;
+      return;
+    }
+    tb.innerHTML = users.map(u => `
+      <tr class="border-t border-slate-200/40 dark:border-white/5">
+        <td class="p-2">
+          <div class="font-medium">${u.full_name || u.email}</div>
+          <div class="text-xs opacity-60">${u.email}</div>
+        </td>
+        <td class="p-2">${u.country_code || '—'}</td>
+        <td class="p-2 text-right"><span class="b30-pill b30-pill-verified">L${u.level || 0}</span></td>
+        <td class="p-2 text-right font-semibold">${u.total_credits || 0}</td>
+        <td class="p-2 text-right">${u.total_pairings || 0}</td>
+        <td class="p-2 text-right text-xs opacity-70">${new Date(u.created_at).toLocaleDateString()}</td>
+      </tr>`).join('');
+  }
+
+  function renderConfig() {
+    const text = JSON.stringify(window.B30Config.get(), null, 2);
+    const stored = localStorage.getItem('b30-config-override');
+    document.getElementById('configEditor').value = stored || text;
+  }
+
+  function wireTabs() {
+    const tabs = document.querySelectorAll('#adminTabs .tab');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => {
+        x.classList.toggle('is-active', x === t);
+        x.classList.toggle('border-blue-500', x === t);
+        x.classList.toggle('text-blue-500', x === t);
+        x.classList.toggle('border-transparent', x !== t);
+      });
+      document.querySelectorAll('[data-tab-panel]').forEach(p => p.classList.toggle('hidden', p.dataset.tabPanel !== t.dataset.tab));
+    }));
+  }
+
+  whenReady((cfg) => {
+    if (window.B30Store.getAdminSession()) showPanel();
+    else showGate();
+
+    document.getElementById('adminLogin').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pw = e.target.pw.value;
+      const ok = window.B30Store.adminSignIn(pw);
+      if (ok) {
+        Swal.fire({ icon:'success', timer:900, showConfirmButton:false, title: window.B30I18n.t('admin.toast.signedIn') });
+        setTimeout(showPanel, 600);
+      } else {
+        Swal.fire({ icon:'error', title: window.B30I18n.t('admin.toast.wrong') });
+      }
+    });
+    document.getElementById('adminLogout').addEventListener('click', () => {
+      window.B30Store.adminSignOut(); showGate();
+    });
+    document.getElementById('seedDemoBtn').addEventListener('click', async () => {
+      await window.B30Store.seedDemo();
+      Swal.fire({ icon:'success', timer:1100, showConfirmButton:false, title:'Demo user created · demo@2030b.io / demo12345' });
+      refreshAll();
+    });
+
+    wireTabs();
+
+    // Config editor
+    document.getElementById('configSave').addEventListener('click', () => {
+      try {
+        const parsed = JSON.parse(document.getElementById('configEditor').value);
+        localStorage.setItem('b30-config-override', JSON.stringify(parsed));
+        // mutate live config
+        Object.assign(window.B30Config.get(), parsed);
+        document.getElementById('configStatus').textContent = 'Saved locally · ' + new Date().toLocaleTimeString();
+        Swal.fire({ icon:'success', timer:900, showConfirmButton:false, title:'Config saved (local override).' });
+      } catch (e) {
+        Swal.fire({ icon:'error', title:'Invalid JSON: ' + e.message });
+      }
+    });
+    document.getElementById('configReset').addEventListener('click', () => {
+      localStorage.removeItem('b30-config-override');
+      Swal.fire({ icon:'info', timer:900, showConfirmButton:false, title:'Local override cleared. Reloading…' });
+      setTimeout(() => location.reload(), 800);
+    });
+  });
+
+  // Apply override on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const stored = localStorage.getItem('b30-config-override');
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      window.B30Config.onLoad((c) => Object.assign(c, parsed));
+    } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

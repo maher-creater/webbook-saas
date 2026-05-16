@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Documentation — 2030B P2P Pairing</title>
+<meta name="description" content="Step-by-step: verify Binance & RedotPay, perform P2P trades, capture clean screenshots, and progress through the 4 levels." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme: { extend: {
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[260px_1fr] gap-8">
+
+    <!-- Sidebar TOC -->
+    <aside class="lg:sticky lg:top-28 self-start">
+      <div class="b30-card">
+        <h2 class="font-display font-bold text-lg mb-3" data-i18n="docs.title">Documentation</h2>
+        <ul class="space-y-1 text-sm">
+          <li><a class="hover:text-blue-500 block py-1" href="#overview">Overview</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#binance"><span data-i18n="docs.binance">Verify Binance</span></a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#redotpay"><span data-i18n="docs.redotpay">Verify RedotPay</span></a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#how-trade"><span data-i18n="docs.howToPair">How to make a pairing</span></a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#screenshots"><span data-i18n="docs.screenshots">Screenshot rules</span></a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#level-1">Level 1</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#level-2">Level 2</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#level-3">Level 3</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#level-4">Level 4</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <article class="space-y-10">
+
+      <header data-rv>
+        <h1 class="font-display font-extrabold text-4xl text-slate-900 dark:text-white" data-i18n="docs.title">Documentation</h1>
+        <p class="mt-2 text-slate-600 dark:text-slate-400" data-i18n="docs.subtitle">Everything you need: account verification, P2P walkthrough, screenshot rules, and level requirements.</p>
+      </header>
+
+      <!-- Overview -->
+      <section id="overview" class="b30-card" data-rv>
+        <h2 class="font-display font-bold text-2xl mb-3">Overview · the pairing flow</h2>
+        <ol class="space-y-3 text-slate-700 dark:text-slate-300 list-decimal pl-5">
+          <li>Open a verified Binance and/or RedotPay account using Maher's affiliate link below.</li>
+          <li>Execute a real P2P <strong>buy</strong> of USDT (3% fee) followed by a real <strong>sell</strong> at a higher price.</li>
+          <li>Open the 2030B dashboard, click <em>Add new pairing</em> and upload both screenshots with amounts and date.</li>
+          <li>The 2030B admin (or auto-checker) verifies the screenshots — you earn <strong>+1 credit</strong> and progress your level.</li>
+        </ol>
+      </section>
+
+      <!-- Binance -->
+      <section id="binance" class="b30-card" data-rv>
+        <div class="flex items-center gap-3 mb-3">
+          <span data-b30-platform="binance" data-size="48"></span>
+          <h2 class="font-display font-bold text-2xl" data-i18n="docs.binance">Verify Binance</h2>
+        </div>
+        <ol class="space-y-2 text-slate-700 dark:text-slate-300 list-decimal pl-5">
+          <li>Click <a id="binanceLink" class="text-blue-500 underline" href="#" target="_blank" rel="noopener">Maher's Binance affiliate link</a> — your account starts with lifetime fee discount.</li>
+          <li>Sign up using your real legal name and a strong password.</li>
+          <li>Open Identity → Verification. Submit ID front/back + selfie. Approval usually takes 24h.</li>
+          <li>Enable 2FA (Google Authenticator + SMS).</li>
+          <li>Deposit a small fiat amount via your local payment method, or buy USDT via the P2P tab.</li>
+          <li>You're ready to perform real P2P trades on Binance — required for Level 3.</li>
+        </ol>
+        <p class="mt-4 text-sm opacity-70" data-i18n="docs.affiliate">Use Maher's affiliate link</p>
+        <a id="binanceCta" href="#" target="_blank" rel="noopener" class="wb-btn-primary mt-2 inline-flex rounded-lg px-4 py-2 text-sm font-semibold items-center gap-2">
+          <i data-lucide="external-link" class="w-4 h-4"></i> <span data-i18n="docs.openBinance">Open Binance signup</span>
+        </a>
+      </section>
+
+      <!-- RedotPay -->
+      <section id="redotpay" class="b30-card" data-rv>
+        <div class="flex items-center gap-3 mb-3">
+          <span data-b30-platform="redotpay" data-size="48"></span>
+          <h2 class="font-display font-bold text-2xl" data-i18n="docs.redotpay">Verify RedotPay</h2>
+        </div>
+        <ol class="space-y-2 text-slate-700 dark:text-slate-300 list-decimal pl-5">
+          <li>Click <a id="redotpayLink" class="text-blue-500 underline" href="#" target="_blank" rel="noopener">Maher's RedotPay affiliate link</a> and install the RedotPay mobile app.</li>
+          <li>Sign up with your phone number (RedotPay is mobile-first).</li>
+          <li>Complete KYC: ID document + face scan in-app. Usually approved in minutes.</li>
+          <li>Add a deposit method (bank transfer, card, or crypto).</li>
+          <li>Open the P2P tab to buy/sell USDT against your local currency.</li>
+          <li>You're ready — required for Level 2.</li>
+        </ol>
+        <p class="mt-4 text-sm opacity-70" data-i18n="docs.affiliate">Use Maher's affiliate link</p>
+        <a id="redotpayCta" href="#" target="_blank" rel="noopener" class="wb-btn-primary mt-2 inline-flex rounded-lg px-4 py-2 text-sm font-semibold items-center gap-2">
+          <i data-lucide="external-link" class="w-4 h-4"></i> <span data-i18n="docs.openRedotPay">Open RedotPay signup</span>
+        </a>
+      </section>
+
+      <!-- How to trade -->
+      <section id="how-trade" class="b30-card" data-rv>
+        <h2 class="font-display font-bold text-2xl mb-3" data-i18n="docs.howToPair">How to make a pairing</h2>
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div>
+            <h3 class="font-semibold text-emerald-500 mb-2"><i data-lucide="arrow-down-circle" class="w-4 h-4 inline"></i> Buy leg</h3>
+            <ol class="space-y-1 text-sm list-decimal pl-5">
+              <li>Open the P2P tab on your platform.</li>
+              <li>Choose a seller with a good rating offering USDT in your local currency.</li>
+              <li>Place a buy order — expect ~3% fee.</li>
+              <li>Send the fiat via the seller's payment method.</li>
+              <li>Confirm release of USDT to your wallet.</li>
+              <li>Take a clean screenshot showing amount, fiat total, fees, and timestamp.</li>
+            </ol>
+          </div>
+          <div>
+            <h3 class="font-semibold text-amber-500 mb-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 inline"></i> Sell leg</h3>
+            <ol class="space-y-1 text-sm list-decimal pl-5">
+              <li>Back on the P2P tab, choose a buyer paying a higher fiat rate.</li>
+              <li>Post a sell ad or take an existing buy order.</li>
+              <li>Send USDT to escrow; the buyer transfers fiat to your account.</li>
+              <li>Confirm fiat received and release USDT.</li>
+              <li>Take a clean screenshot of the completed sell.</li>
+              <li>Result: ≈10% profit on capital → +1 credit on 2030B.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screenshots -->
+      <section id="screenshots" class="b30-card" data-rv>
+        <h2 class="font-display font-bold text-2xl mb-3" data-i18n="docs.screenshots">Screenshot rules</h2>
+        <p class="text-sm opacity-80 mb-3">A valid screenshot lets the 2030B verifier approve your pairing in seconds. Make sure each capture contains:</p>
+        <ul class="grid sm:grid-cols-2 gap-3 text-sm">
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> USDT amount and fiat amount</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Transaction date & time</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Transaction ID / reference number</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Platform name visible (Binance or RedotPay)</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> Status = Completed</li>
+          <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5"></i> No personal data of counterparty (mask it)</li>
+        </ul>
+        <p class="mt-4 text-xs opacity-60">Format: PNG, JPG, or WebP · Max 5 MB · No editing/photoshopping.</p>
+      </section>
+
+      <!-- Levels -->
+      <section data-rv class="grid sm:grid-cols-2 gap-4">
+        <div class="b30-card" id="level-1">
+          <div class="flex items-center gap-3"><span data-b30-level="1" data-size="44"></span><h3 class="font-display font-bold text-xl">Level 1 — Member</h3></div>
+          <p class="mt-3 text-sm" id="docL1">—</p>
+        </div>
+        <div class="b30-card" id="level-2">
+          <div class="flex items-center gap-3"><span data-b30-level="2" data-size="44"></span><h3 class="font-display font-bold text-xl">Level 2 — RedotPay</h3></div>
+          <p class="mt-3 text-sm" id="docL2">—</p>
+        </div>
+        <div class="b30-card" id="level-3">
+          <div class="flex items-center gap-3"><span data-b30-level="3" data-size="44"></span><h3 class="font-display font-bold text-xl">Level 3 — Binance</h3></div>
+          <p class="mt-3 text-sm" id="docL3">—</p>
+        </div>
+        <div class="b30-card" id="level-4">
+          <div class="flex items-center gap-3"><span data-b30-level="4" data-size="44"></span><h3 class="font-display font-bold text-xl">Level 4 — Internal P2P</h3></div>
+          <p class="mt-3 text-sm" id="docL4">—</p>
+          <a href="level4.html" class="mt-3 inline-flex items-center gap-1 text-blue-500 font-semibold text-sm">
+            <i data-lucide="arrow-right" class="w-4 h-4" data-flip-x></i> Request early access
+          </a>
+        </div>
+      </section>
+
+    </article>
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+(function () {
+  function whenReady(fn) {
+    Promise.all([
+      new Promise(r => window.B30Config.onLoad(r)),
+      window.B30I18n.ready()
+    ]).then(([c]) => fn(c));
+  }
+  whenReady((cfg) => {
+    // Affiliate links from config.json
+    const aff = cfg.affiliate || {};
+    ['binanceLink','binanceCta'].forEach(id => { const a = document.getElementById(id); if (a && aff.binance) a.href = aff.binance; });
+    ['redotpayLink','redotpayCta'].forEach(id => { const a = document.getElementById(id); if (a && aff.redotpay) a.href = aff.redotpay; });
+    const L = cfg.levels || {};
+    document.getElementById('docL1').textContent = (L['1']||{}).description || '';
+    document.getElementById('docL2').textContent = (L['2']||{}).description || '';
+    document.getElementById('docL3').textContent = (L['3']||{}).description || '';
+    document.getElementById('docL4').textContent = (L['4']||{}).description || '';
+    if (window.B30Logos) window.B30Logos.renderAuto();
+    if (window.lucide) lucide.createIcons();
+  });
+})();
+</script>
+</body>
+</html>

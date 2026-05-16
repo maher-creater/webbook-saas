@@ -1,0 +1,44 @@
+# 2030B P2P Pairing — Root .htaccess
+#
+# Routes top-level requests to the PHP backend when present, otherwise
+# falls back to the static HTML files (useful for the JS-only demo).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # If PHP backend is installed, prefer it for dynamic routes.
+  RewriteCond %{DOCUMENT_ROOT}/backend/api.php -f
+  RewriteRule ^api/(.*)$       backend/api.php?op=$1 [L,QSA]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/dashboard.php -f
+  RewriteRule ^dashboard/?$    backend/dashboard.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/docs.php -f
+  RewriteRule ^docs/?$         backend/docs.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/admin.php -f
+  RewriteRule ^admin/?$        backend/admin.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/level4.php -f
+  RewriteRule ^level4/?$       backend/level4.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/index.php -f
+  RewriteRule ^/?$             backend/index.php [L]
+</IfModule>
+
+# Sensible defaults
+<FilesMatch "\.(sqlite|sqlite-journal|sql|log)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes
+
+# Cache static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/png     "access plus 7 days"
+  ExpiresByType image/jpeg    "access plus 7 days"
+  ExpiresByType text/css      "access plus 1 day"
+  ExpiresByType application/javascript "access plus 1 day"
+  ExpiresByType application/json "access plus 1 hour"
+</IfModule>

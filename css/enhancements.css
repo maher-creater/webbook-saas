@@ -60,18 +60,8 @@
 
 /* ===================== ACTIVE NAV STATES ===================== */
 [data-mega-host] [data-mega-trigger] > button { position: relative; }
-[data-mega-host] [data-mega-trigger][data-active] > button { color: #7c3aed; }
-.dark [data-mega-host] [data-mega-trigger][data-active] > button { color: #c4b5fd; }
-[data-mega-host] [data-mega-trigger][data-active] > button::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -2px;
-  height: 2px; border-radius: 2px;
-  background: linear-gradient(90deg, #7c3aed, #f43f5e);
-}
-[data-mega-panel] a[data-active-link] {
-  background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(244,63,94,0.10));
-  outline: 1px solid rgba(124,58,237,0.25);
-}
-[data-mega-mobile] a[data-active-link] { color: #7c3aed; font-weight: 600; }
+[data-nav][data-active-link] { color:#3b82f6; }
+.dark [data-nav][data-active-link] { color:#7dd3fc; }
 
 /* Hide brand text id on desktop */
 @media (min-width: 1024px) {
@@ -88,7 +78,7 @@
 .nav-icon-btn:hover { transform: translateY(-1px); }
 .nav-icon-btn .ring-pulse {
   position: absolute; inset: 0; border-radius: 0.5rem;
-  border: 1px solid rgba(124,58,237,0.45); opacity: 0;
+  border: 1px solid rgba(59,130,246,0.45); opacity: 0;
   animation: navRingPulse 2.4s ease-out infinite;
 }
 @keyframes navRingPulse {
@@ -139,17 +129,17 @@
 }
 :not(.dark) .wb-aside .lang-item { border-color: rgba(15,23,42,0.08); background: rgba(15,23,42,0.02); }
 .wb-aside .lang-item:hover {
-  border-color: rgba(124,58,237,0.55);
-  background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(244,63,94,0.06));
+  border-color: rgba(59,130,246,0.55);
+  background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(34,197,94,0.06));
   transform: translateY(-1px);
 }
 .wb-aside .lang-item[aria-selected="true"] {
-  background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(244,63,94,0.10));
-  border-color: rgba(124,58,237,0.55);
+  background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(34,197,94,0.12));
+  border-color: rgba(59,130,246,0.55);
 }
 .wb-aside .user-avatar {
   width: 64px; height: 64px; border-radius: 9999px;
-  background: linear-gradient(135deg, #7c3aed, #f43f5e, #f59e0b);
+  background: linear-gradient(135deg, #3b82f6, #06b6d4, #22c55e);
   display: inline-flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 700; font-size: 1.4rem;
   font-family: 'Fraunces', 'Space Grotesk', serif;
@@ -171,8 +161,8 @@
 }
 :not(.dark) .wb-aside .aside-action { border-color: rgba(15,23,42,0.08); background: rgba(15,23,42,0.02); }
 .wb-aside .aside-action:hover {
-  border-color: rgba(124,58,237,0.45);
-  background: linear-gradient(135deg, rgba(124,58,237,0.06), rgba(244,63,94,0.05));
+  border-color: rgba(59,130,246,0.45);
+  background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(34,197,94,0.05));
 }
 
 /* ===================== ANIMATED LOGOS ===================== */
