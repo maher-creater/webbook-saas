@@ -41,7 +41,7 @@
  */
 (function () {
   const DB_NAME = 'b30_p2p';
-  const DB_VER  = 1;
+  const DB_VER  = 2;
   const SESSION_KEY = 'b30-session';
   const ADMIN_SESSION_KEY = 'b30-admin-session';
 
@@ -95,6 +95,16 @@
         }
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings', { keyPath: 'key' });
+        }
+        if (!db.objectStoreNames.contains('api_keys')) {
+          const s = db.createObjectStore('api_keys', { keyPath: 'id' });
+          s.createIndex('user_id', 'user_id');
+          s.createIndex('key', 'key', { unique: true });
+        }
+        if (!db.objectStoreNames.contains('auth_events')) {
+          const s = db.createObjectStore('auth_events', { keyPath: 'id' });
+          s.createIndex('user_id', 'user_id');
+          s.createIndex('created_at', 'created_at');
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -209,9 +219,17 @@
       country_code: country_code || 'TN',
       language: language || (window.B30I18n ? window.B30I18n.current() : 'en'),
       phone: phone || '',
-      level: 0, total_credits: 0, total_pairings: 0,
+      level: 0, total_credits: 0, total_pairings: 0, total_operations: 0,
       redotpay_ops_count: 0, binance_ops_count: 0,
       redotpay_pairings_count: 0, binance_pairings_count: 0,
+      // Profile completion (Binance & RedotPay IDs)
+      binance_id: '',
+      redotpay_id: '',
+      profile_completed: false,
+      // Verification status (email + optional social)
+      email_verified: false,
+      email_verification_code: null,
+      auth_provider: 'password',
       created_at: Date.now(), last_login: Date.now(),
       is_active: true, role: 'user'
     };
@@ -245,6 +263,156 @@
     return true;
   }
   function adminSignOut() { localStorage.removeItem(ADMIN_SESSION_KEY); }
+
+  // ---------- Email verification ----------
+  async function startEmailVerification(userId) {
+    const u = await getUser(userId);
+    if (!u) throw new Error('User not found');
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    u.email_verification_code = code;
+    u.email_verified = false;
+    await putUser(u);
+    // Demo: surface the code via console (real backend emails it)
+    console.info('[B30] Verification code for ' + u.email + ':', code);
+    return code;
+  }
+  async function confirmEmailVerification(userId, code) {
+    const u = await getUser(userId);
+    if (!u) throw new Error('User not found');
+    if (!u.email_verification_code || String(u.email_verification_code) !== String(code)) {
+      throw new Error('Invalid verification code');
+    }
+    u.email_verified = true;
+    u.email_verification_code = null;
+    await putUser(u);
+    setSession(u);
+    return u;
+  }
+
+  // ---------- Profile completion (Binance + RedotPay IDs) ----------
+  async function updateProfile(userId, payload) {
+    const u = await getUser(userId);
+    if (!u) throw new Error('User not found');
+    const cfg = (window.B30Config && window.B30Config.get()) || {};
+    const pcfg = (cfg.profile || {});
+    if ('binance_id' in payload) {
+      const v = String(payload.binance_id || '').trim();
+      if (v) {
+        const re = new RegExp(pcfg.binance_id_regex || '^[0-9]{6,20}$');
+        if (!re.test(v)) throw new Error('Invalid Binance ID format');
+      }
+      u.binance_id = v;
+    }
+    if ('redotpay_id' in payload) {
+      const v = String(payload.redotpay_id || '').trim();
+      if (v) {
+        const re = new RegExp(pcfg.redotpay_id_regex || '^[A-Za-z0-9_\\-]{4,32}$');
+        if (!re.test(v)) throw new Error('Invalid RedotPay ID format');
+      }
+      u.redotpay_id = v;
+    }
+    if ('full_name' in payload && payload.full_name) u.full_name = String(payload.full_name).trim();
+    if ('phone' in payload) u.phone = String(payload.phone || '').trim();
+    u.profile_completed = !!(u.binance_id || u.redotpay_id);
+    await putUser(u);
+    setSession(u);
+    return u;
+  }
+
+  // ---------- API Keys (auth-as-a-service) ----------
+  function randomKey(prefix) {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return (prefix || 'b30_') + Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  async function createApiKey({ userId, label, scopes, origins }) {
+    const rec = {
+      id: uid('k_'),
+      user_id: userId || null,
+      label: label || 'Untitled key',
+      key: randomKey('b30k_'),
+      scopes: Array.isArray(scopes) ? scopes : ['auth:read', 'auth:popup'],
+      origins: Array.isArray(origins) ? origins : ['*'],
+      created_at: Date.now(),
+      last_used: null,
+      enabled: true
+    };
+    await tx(['api_keys'], 'readwrite', t => t.objectStore('api_keys').put(rec));
+    return rec;
+  }
+  async function listApiKeys(userId) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('api_keys', 'readonly');
+      const store = t.objectStore('api_keys');
+      let req;
+      if (userId) req = store.index('user_id').getAll(userId);
+      else req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+  async function updateApiKey(id, patch) {
+    const db = await openDB();
+    const t = db.transaction('api_keys', 'readwrite');
+    const store = t.objectStore('api_keys');
+    const cur = await reqProm(store.get(id));
+    if (!cur) return null;
+    Object.assign(cur, patch || {});
+    await reqProm(store.put(cur));
+    return cur;
+  }
+  async function deleteApiKey(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('api_keys', 'readwrite');
+      const req = t.objectStore('api_keys').delete(id);
+      req.onsuccess = () => resolve(true);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+  async function findApiKey(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('api_keys', 'readonly');
+      const idx = t.objectStore('api_keys').index('key');
+      const req = idx.get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  // ---------- Single-leg P2P operation (Level 1) ----------
+  // Creates ONE transaction (buy OR sell) — no pairing, no companion leg.
+  // Used to unlock Level 1 per config.json `levels.1.required_operations`.
+  async function createOperation({ userId, platform, type, amount_usdt, amount_fiat, fiat_currency, fee_percent, transaction_date, screenshot }) {
+    const cfg = (window.B30Config && window.B30Config.get()) || {};
+    const fees = cfg.fees || { buy_fee_percent: 3, sell_fee_percent: 0 };
+    const fp = (fee_percent != null) ? +fee_percent : (type === 'buy' ? fees.buy_fee_percent : fees.sell_fee_percent);
+    const sign = (type === 'buy') ? 1 : -1;
+    const total = +amount_fiat * (1 + sign * (fp / 100));
+    const opTx = {
+      id: uid('t_'), user_id: userId, platform, type,
+      amount_usdt: +amount_usdt,
+      amount_fiat: +amount_fiat,
+      fiat_currency: fiat_currency || cfg.default_fiat_currency || 'TND',
+      fee_percent: fp,
+      fee_amount: +(+amount_fiat * fp / 100).toFixed(4),
+      total_cost: +total.toFixed(4),
+      transaction_date: transaction_date || Date.now(),
+      status: 'pending', verification_notes: '',
+      paired_with: null, pairing_id: null,
+      screenshot_id: null,
+      single_op: true,
+      created_at: Date.now()
+    };
+    if (screenshot) {
+      const id = await saveScreenshot(screenshot, userId, opTx.id);
+      opTx.screenshot_id = id;
+    }
+    await tx(['transactions'], 'readwrite', t => t.objectStore('transactions').put(opTx));
+    return opTx;
+  }
 
   // ---------- Transactions / Pairings ----------
   async function createPairing({ userId, platform, buy, sell, screenshots }) {
@@ -362,9 +530,61 @@
     await reqProm(store.put(cur));
     await new Promise((res) => { t.oncomplete = res; });
 
-    // If both legs of the pairing are now verified, finalize pairing + counters
-    await maybeFinalizePairing(cur.pairing_id);
+    // If part of a pairing, finalize that pairing. Otherwise recompute single-op counters.
+    if (cur.pairing_id) await maybeFinalizePairing(cur.pairing_id);
+    else await recomputeUserCounters(cur.user_id);
     return cur;
+  }
+
+  // Recompute level/credits/counters for a user without requiring a pairing.
+  async function recomputeUserCounters(userId) {
+    const cfg = (window.B30Config && window.B30Config.get()) || {};
+    const creditsPer = cfg.credits_per_pairing || 1;
+    const creditsSingle = cfg.credits_per_single_op || 0.5;
+    const db = await openDB();
+    const t = db.transaction(['transactions', 'pairings', 'users'], 'readwrite');
+    const txs = await reqProm(t.objectStore('transactions').index('user_id').getAll(userId));
+    const prs = await reqProm(t.objectStore('pairings').index('user_id').getAll(userId));
+    const userStore = t.objectStore('users');
+    const u = await reqProm(userStore.get(userId));
+    if (!u) return null;
+
+    let rOps = 0, bOps = 0, rPairs = 0, bPairs = 0, totalPairs = 0;
+    let totalOps = 0; let credits = 0;
+    txs.forEach(x => {
+      if (x.status !== 'verified') return;
+      totalOps++;
+      if (x.platform === 'redotpay') rOps++;
+      else if (x.platform === 'binance') bOps++;
+    });
+    prs.forEach(p => {
+      const pt = txs.filter(x => x.pairing_id === p.pairing_id);
+      const ok = pt.length === 2 && pt.every(x => x.status === 'verified');
+      if (ok) {
+        totalPairs++;
+        if (p.platform === 'redotpay') rPairs++;
+        else if (p.platform === 'binance') bPairs++;
+        credits += creditsPer;
+      }
+    });
+    // Single-leg ops (not part of a pairing) award fractional credits
+    const singleVerified = txs.filter(x => x.status === 'verified' && !x.pairing_id).length;
+    credits += singleVerified * creditsSingle;
+
+    u.redotpay_ops_count = rOps;
+    u.binance_ops_count  = bOps;
+    u.redotpay_pairings_count = rPairs;
+    u.binance_pairings_count  = bPairs;
+    u.total_pairings   = totalPairs;
+    u.total_operations = totalOps;
+    u.total_credits    = +credits.toFixed(2);
+    u.level = computeLevel(u, cfg);
+
+    await reqProm(userStore.put(u));
+    await new Promise(r => { t.oncomplete = r; });
+    const ses = getSession();
+    if (ses && ses.id === u.id) setSession(u);
+    return u;
   }
 
   async function maybeFinalizePairing(pairingId) {
@@ -410,12 +630,19 @@
       }
     });
 
+    // Add single-leg op credits + count
+    const creditsSingle = cfg.credits_per_single_op || 0.5;
+    const singleVerified = allTxs.filter(x => x.status === 'verified' && !x.pairing_id).length;
+    credits += singleVerified * creditsSingle;
+    const totalOps = allTxs.filter(x => x.status === 'verified').length;
+
     user.redotpay_ops_count = rOps;
     user.binance_ops_count = bOps;
     user.redotpay_pairings_count = rPairs;
     user.binance_pairings_count = bPairs;
     user.total_pairings = totalPairs;
-    user.total_credits  = credits;
+    user.total_operations = totalOps;
+    user.total_credits  = +credits.toFixed(2);
     user.level = computeLevel(user, cfg);
 
     // Update this pairing's status/credits
@@ -434,20 +661,23 @@
 
   function computeLevel(u, cfg) {
     const L = (cfg && cfg.levels) || {};
-    const L1 = L['1'] || { required_pairings: 1 };
+    const L1 = L['1'] || { required_operations: 1, required_pairings: 0 };
     const L2 = L['2'] || { required_redotpay_operations: 3, required_redotpay_pairings: 1 };
     const L3 = L['3'] || { required_binance_operations: 20, required_binance_pairings: 1 };
     const L4 = L['4'] || { required_pairings: 100 };
 
     let level = 0;
-    if (u.total_pairings >= (L1.required_pairings || 1)) level = 1;
+    // Level 1 — single verified op OR pairing (NOT a full pairing required)
+    const reqOps   = L1.required_operations != null ? L1.required_operations : 1;
+    const reqPairs = L1.required_pairings   != null ? L1.required_pairings   : 0;
+    if ((u.total_operations || 0) >= reqOps && (u.total_pairings || 0) >= reqPairs) level = 1;
     if (u.redotpay_ops_count >= (L2.required_redotpay_operations || 3) &&
         u.redotpay_pairings_count >= (L2.required_redotpay_pairings || 1) &&
         level >= 1) level = 2;
     if (u.binance_ops_count >= (L3.required_binance_operations || 20) &&
         u.binance_pairings_count >= (L3.required_binance_pairings || 1) &&
         level >= 2) level = 3;
-    if (u.total_pairings >= (L4.required_pairings || 100) && level >= 3) level = 4;
+    if ((u.total_pairings || 0) >= (L4.required_pairings || 100) && level >= 3) level = 4;
     return level;
   }
 
@@ -570,13 +800,19 @@
     // session
     getSession, clearSession, updateSession,
     // users
-    register, signIn, getUser, listUsers,
+    register, signIn, getUser, listUsers, updateProfile,
+    // verification
+    startEmailVerification, confirmEmailVerification,
     // admin
     adminSignIn, adminSignOut, getAdminSession,
-    // pairings
-    createPairing, listPairings, listTransactions, setTransactionStatus, recomputeCounters, computeLevel,
+    // pairings + single ops
+    createPairing, createOperation,
+    listPairings, listTransactions, setTransactionStatus,
+    recomputeCounters, recomputeUserCounters, computeLevel,
     // assets
     saveScreenshot, getScreenshot,
+    // api keys
+    createApiKey, listApiKeys, updateApiKey, deleteApiKey, findApiKey,
     // fx
     exchangeRates, formatFiat,
     // settings

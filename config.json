@@ -1,15 +1,16 @@
 {
   "platform": {
     "name": "2030B P2P Pairing",
-    "version": "1.0",
+    "version": "2.0",
     "support_email": "support@2030b.io"
   },
   "levels": {
     "1": {
-      "required_pairings": 1,
+      "required_operations": 1,
+      "required_pairings": 0,
       "unlocks": "basic_membership",
       "title": "Member",
-      "description": "Submit your first verified pairing (1 buy + 1 sell) on either platform."
+      "description": "Submit your first verified P2P operation (just a buy OR a sell) on either platform. After it's verified we'll recommend filling in the matching Binance / RedotPay ID on your profile."
     },
     "2": {
       "required_redotpay_operations": 3,
@@ -38,6 +39,7 @@
   },
   "profit_percent": 10,
   "credits_per_pairing": 1,
+  "credits_per_single_op": 0.5,
 
   "default_fiat_currency": "TND",
   "supported_fiat_currencies": [
@@ -64,6 +66,27 @@
     "max_size_mb": 5,
     "allowed_mime": ["image/jpeg", "image/png", "image/webp"]
   },
+
+  "profile": {
+    "binance_id_required_after_first_binance_op":   true,
+    "redotpay_id_required_after_first_redotpay_op": true,
+    "binance_id_label":   "Binance ID (UID)",
+    "redotpay_id_label":  "RedotPay ID",
+    "binance_id_regex":   "^[0-9]{6,20}$",
+    "redotpay_id_regex":  "^[A-Za-z0-9_\\-]{4,32}$"
+  },
+
+  "auth": {
+    "enable_email_verification":   true,
+    "enable_social":               true,
+    "social_providers":            ["google", "github", "x", "facebook"],
+    "popup_origin_whitelist":      ["*"],
+    "session_minutes":             30,
+    "rate_limit_per_minute":       10,
+    "min_password_length":         8
+  },
+
+  "ecosystem_currencies_file": "ecosystem-currencies.json",
 
   "countries": [
     { "code": "TN", "name": "Tunisia",         "currency": "TND" },

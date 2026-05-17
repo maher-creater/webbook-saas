@@ -39,9 +39,32 @@
         <h1 class="font-display font-extrabold text-3xl text-slate-900 dark:text-white" id="dashWelcome">Dashboard</h1>
         <p class="mt-1 text-slate-600 dark:text-slate-400" id="dashSubtitle">—</p>
       </div>
-      <button id="btnAddPairing" class="wb-btn-primary rounded-xl px-5 py-2.5 font-semibold inline-flex items-center gap-2">
-        <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="cta.addPairing">Add new pairing</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="btnAddOp" class="wb-btn-ghost rounded-xl px-4 py-2.5 font-semibold inline-flex items-center gap-2 border border-slate-300 dark:border-white/10">
+          <i data-lucide="zap" class="w-4 h-4"></i> <span data-i18n="cta.addOp">Add single op</span>
+        </button>
+        <button id="btnAddPairing" class="wb-btn-primary rounded-xl px-5 py-2.5 font-semibold inline-flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="cta.addPairing">Add new pairing</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Profile completion banner (shown if Binance/RedotPay IDs are missing AFTER a verified op) -->
+    <div id="profileBanner" class="hidden mt-6 b30-card border border-amber-500/40 bg-amber-500/5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <span class="rounded-full bg-amber-500/15 text-amber-500 w-10 h-10 inline-flex items-center justify-center flex-shrink-0">
+            <i data-lucide="badge-info" class="w-5 h-5"></i>
+          </span>
+          <div>
+            <p class="font-display font-bold" data-i18n="profile.banner.title">Complete your trading profile</p>
+            <p class="text-sm opacity-80 mt-1" id="profileBannerHint" data-i18n="profile.banner.hint">Add your Binance and/or RedotPay IDs so we can verify your operations faster.</p>
+          </div>
+        </div>
+        <button id="btnOpenProfile" class="wb-btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-4 h-4"></i> <span data-i18n="profile.banner.cta">Complete profile</span>
+        </button>
+      </div>
     </div>
 
     <!-- Stat row -->
@@ -221,6 +244,127 @@
   </div>
 </div>
 
+<!-- ====== Quick single-op Modal (Level 1 friendly) ====== -->
+<div id="opModal" class="b30-modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="b30-modal p-6 sm:p-8">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display font-extrabold text-2xl" data-i18n="op.title">Add a single P2P op</h2>
+      <button class="wb-btn-ghost rounded-lg w-9 h-9 flex items-center justify-center" id="opClose" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <p class="text-sm opacity-70 mt-2" data-i18n="op.subtitle">For Level 1 you only need ONE verified P2P op — buy OR sell — on Binance or RedotPay.</p>
+
+    <form id="opForm" class="mt-5 space-y-4" novalidate>
+      <!-- platform -->
+      <div>
+        <label class="text-sm font-medium" data-i18n="op.field.platform">Platform</label>
+        <div class="grid grid-cols-2 gap-3 mt-2">
+          <label class="b30-card b30-tile cursor-pointer text-center p-4">
+            <input type="radio" name="op_platform" value="binance" class="sr-only" required>
+            <span data-b30-platform="binance" data-size="40" class="inline-block"></span>
+            <p class="mt-2 font-display font-bold text-sm" data-i18n="pairing.platform.binance">Binance</p>
+          </label>
+          <label class="b30-card b30-tile cursor-pointer text-center p-4">
+            <input type="radio" name="op_platform" value="redotpay" class="sr-only" required>
+            <span data-b30-platform="redotpay" data-size="40" class="inline-block"></span>
+            <p class="mt-2 font-display font-bold text-sm" data-i18n="pairing.platform.redotpay">RedotPay</p>
+          </label>
+        </div>
+      </div>
+      <!-- type -->
+      <div>
+        <label class="text-sm font-medium" data-i18n="op.field.type">Type</label>
+        <div class="grid grid-cols-2 gap-3 mt-2">
+          <label class="b30-card b30-tile cursor-pointer text-center p-3">
+            <input type="radio" name="op_type" value="buy" class="sr-only" required>
+            <i data-lucide="arrow-down-circle" class="w-5 h-5 mx-auto text-emerald-500"></i>
+            <p class="font-semibold mt-1 text-sm" data-i18n="op.type.buy">Buy</p>
+          </label>
+          <label class="b30-card b30-tile cursor-pointer text-center p-3">
+            <input type="radio" name="op_type" value="sell" class="sr-only" required>
+            <i data-lucide="arrow-up-circle" class="w-5 h-5 mx-auto text-amber-500"></i>
+            <p class="font-semibold mt-1 text-sm" data-i18n="op.type.sell">Sell</p>
+          </label>
+        </div>
+      </div>
+      <!-- numbers -->
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.usdt">Amount (USDT)</span>
+          <input type="number" step="0.001" min="0.001" required name="op_usdt" class="b30-input mt-1">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.fiat">Fiat amount</span>
+          <input type="number" step="0.01" min="0" required name="op_fiat" class="b30-input mt-1">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.currency">Currency</span>
+          <select name="op_currency" class="b30-input mt-1" data-currency-options></select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.date">Date</span>
+          <input type="date" required name="op_date" class="b30-input mt-1">
+        </label>
+      </div>
+      <!-- screenshot -->
+      <label class="block">
+        <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
+        <div class="b30-drop mt-2" data-drop="op">
+          <input type="file" accept="image/png,image/jpeg,image/webp" name="op_file" class="hidden" required>
+          <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
+          <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
+          <p class="text-xs opacity-60 mt-1" data-drop-name></p>
+        </div>
+      </label>
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" id="opCancel" data-i18n="cta.cancel">Cancel</button>
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> <span data-i18n="cta.submit">Submit</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====== Profile completion modal ====== -->
+<div id="profileModal" class="b30-modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="b30-modal p-6 sm:p-8">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display font-extrabold text-2xl" data-i18n="profile.title">Complete your profile</h2>
+      <button class="wb-btn-ghost rounded-lg w-9 h-9 flex items-center justify-center" id="profileClose" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <p class="text-sm opacity-70 mt-2" data-i18n="profile.subtitle">Add your Binance &amp; RedotPay IDs so admin verification is fast. You can fill one or both.</p>
+
+    <form id="profileForm" class="mt-5 space-y-4" novalidate>
+      <label class="block">
+        <span class="text-sm font-medium flex items-center gap-2">
+          <span data-b30-platform="binance" data-size="20" class="inline-block"></span>
+          <span data-i18n="profile.binance">Binance ID (UID)</span>
+        </span>
+        <input type="text" name="binance_id" class="b30-input mt-1" placeholder="e.g. 123456789" autocomplete="off">
+        <p class="text-xs opacity-60 mt-1" data-i18n="profile.binance.hint">6–20 digits from your Binance account profile.</p>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium flex items-center gap-2">
+          <span data-b30-platform="redotpay" data-size="20" class="inline-block"></span>
+          <span data-i18n="profile.redotpay">RedotPay ID</span>
+        </span>
+        <input type="text" name="redotpay_id" class="b30-input mt-1" placeholder="e.g. RDPmaher2030" autocomplete="off">
+        <p class="text-xs opacity-60 mt-1" data-i18n="profile.redotpay.hint">4–32 chars (letters, digits, _ or -).</p>
+      </label>
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" id="profileSkip" data-i18n="profile.skip">Skip for now</button>
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> <span data-i18n="profile.save">Save profile</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="../js/enhancements.js" defer></script>
 <script>
 /* ====================== DASHBOARD GLUE ====================== */
@@ -247,8 +391,8 @@
 
   function levelRequirementText(level, cfgL, user) {
     if (level === 1) {
-      const r = cfgL.required_pairings || 1;
-      return [{ label: window.B30I18n.t('dash.progress.totalPair') || 'Total verified pairings', cur: user.total_pairings, req: r }];
+      const reqOps = (cfgL.required_operations != null) ? cfgL.required_operations : 1;
+      return [{ label: window.B30I18n.t('dash.progress.totalOps') || 'Verified P2P operations (buy or sell)', cur: user.total_operations || 0, req: reqOps }];
     }
     if (level === 2) {
       return [
@@ -268,7 +412,7 @@
     return [];
   }
 
-  async function refresh() {
+  let refresh = async function () {
     const ses = requireSession(); if (!ses) return;
     const user = await window.B30Store.getUser(ses.id);
     if (!user) return;
@@ -351,7 +495,7 @@
     }
     if (window.B30Logos) window.B30Logos.renderAuto();
     if (window.lucide) lucide.createIcons();
-  }
+  };
 
   // ---------------- Add Pairing wizard ----------------
   function setupPairWizard() {
@@ -486,9 +630,141 @@
     });
   }
 
+  // ---------------- Quick single-op modal ----------------
+  function setupOpModal() {
+    const modal = document.getElementById('opModal');
+    const form  = document.getElementById('opForm');
+    function fillCurrencies() {
+      const opts = (cfg.supported_fiat_currencies || ['USD','TND','EUR']).map(c =>
+        `<option value="${c}" ${c===cfg.default_fiat_currency?'selected':''}>${c}</option>`
+      ).join('');
+      modal.querySelectorAll('[data-currency-options]').forEach(s => s.innerHTML = opts);
+    }
+    function open() {
+      const today = new Date().toISOString().slice(0,10);
+      modal.querySelectorAll('input[type=date]').forEach(i => { if (!i.value) i.value = today; });
+      fillCurrencies();
+      form.reset();
+      modal.querySelectorAll('[data-drop-name]').forEach(e => e.textContent = '');
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    document.getElementById('btnAddOp').addEventListener('click', open);
+    document.getElementById('opClose').addEventListener('click', close);
+    document.getElementById('opCancel').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    // drop zone
+    modal.querySelectorAll('.b30-drop').forEach(drop => {
+      const input = drop.querySelector('input[type=file]');
+      const name  = drop.querySelector('[data-drop-name]');
+      drop.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => { if (input.files[0]) name.textContent = input.files[0].name; });
+      ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+      ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
+      drop.addEventListener('drop', e => {
+        const f = e.dataTransfer.files[0];
+        if (f) { const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files; name.textContent = f.name; }
+      });
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ses = window.B30Store.getSession(); if (!ses) return;
+      const d = new FormData(form);
+      if (!d.get('op_platform') || !d.get('op_type')) {
+        return Swal.fire({ icon:'warning', title:'Choose platform and type' });
+      }
+      try {
+        await window.B30Store.createOperation({
+          userId: ses.id,
+          platform: d.get('op_platform'),
+          type: d.get('op_type'),
+          amount_usdt: +d.get('op_usdt'),
+          amount_fiat: +d.get('op_fiat'),
+          fiat_currency: d.get('op_currency'),
+          transaction_date: +new Date(d.get('op_date')),
+          screenshot: d.get('op_file')
+        });
+        Swal.fire({ icon:'success', timer:1400, showConfirmButton:false,
+          title: window.B30I18n.t('op.toast.submitted') || 'P2P op submitted for verification.' });
+        close();
+        await refresh();
+      } catch (err) {
+        Swal.fire({ icon:'error', title: err.message || 'Submission failed' });
+      }
+    });
+  }
+
+  // ---------------- Profile completion modal ----------------
+  function setupProfileModal() {
+    const modal = document.getElementById('profileModal');
+    const form  = document.getElementById('profileForm');
+    function open() {
+      const ses = window.B30Store.getSession();
+      if (ses) {
+        form.binance_id.value  = ses.binance_id  || '';
+        form.redotpay_id.value = ses.redotpay_id || '';
+      }
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    document.getElementById('btnOpenProfile').addEventListener('click', open);
+    document.getElementById('profileClose').addEventListener('click', close);
+    document.getElementById('profileSkip').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ses = window.B30Store.getSession(); if (!ses) return;
+      const d = new FormData(form);
+      try {
+        await window.B30Store.updateProfile(ses.id, {
+          binance_id:  d.get('binance_id'),
+          redotpay_id: d.get('redotpay_id')
+        });
+        Swal.fire({ icon:'success', timer:1400, showConfirmButton:false,
+          title: window.B30I18n.t('profile.toast.saved') || 'Profile updated.' });
+        close();
+        await refresh();
+      } catch (err) {
+        Swal.fire({ icon:'error', title: err.message || 'Could not save profile' });
+      }
+    });
+  }
+
+  // ---------------- Profile banner logic ----------------
+  function updateProfileBanner(user) {
+    const banner = document.getElementById('profileBanner');
+    const hint   = document.getElementById('profileBannerHint');
+    if (!banner) return;
+    // Show banner if user has ANY verified op but lacks a matching ID
+    const needBin = (user.binance_ops_count  > 0) && !user.binance_id;
+    const needRed = (user.redotpay_ops_count > 0) && !user.redotpay_id;
+    const needsAny = needBin || needRed || (!user.binance_id && !user.redotpay_id && (user.total_operations || 0) > 0);
+    if (!needsAny) { banner.classList.add('hidden'); return; }
+    let msg = window.B30I18n.t('profile.banner.hint') || 'Add your Binance and/or RedotPay IDs so we can verify your operations faster.';
+    if (needBin && !needRed) msg = window.B30I18n.t('profile.banner.needBinance') || 'You completed a Binance op — please add your Binance ID so admin can verify faster.';
+    else if (needRed && !needBin) msg = window.B30I18n.t('profile.banner.needRedotpay') || 'You completed a RedotPay op — please add your RedotPay ID so admin can verify faster.';
+    hint.textContent = msg;
+    banner.classList.remove('hidden');
+  }
+
+  // Hook into refresh to also update banner
+  const _origRefresh = refresh;
+  refresh = async function () {
+    await _origRefresh();
+    try {
+      const ses = window.B30Store.getSession();
+      if (ses) {
+        const user = await window.B30Store.getUser(ses.id);
+        if (user) updateProfileBanner(user);
+      }
+    } catch (e) {}
+  };
+
   whenReady(async (c) => {
     if (!requireSession()) return;
     setupPairWizard();
+    setupOpModal();
+    setupProfileModal();
     await refresh();
   });
 

@@ -53,7 +53,7 @@
               <i data-theme-icon="sun" data-lucide="sun" class="w-5 h-5"></i>
               <i data-theme-icon="moon" data-lucide="moon" class="w-5 h-5 hidden"></i>
             </button>
-            <a href="${prefix}index.html#join" class="hidden sm:inline-flex wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold items-center gap-1 ml-1">
+            <a href="${prefix}auth/index.html" class="hidden sm:inline-flex wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold items-center gap-1 ml-1">
               ${startLabel} <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </a>
             <button data-mobile-toggle class="lg:hidden wb-btn-ghost rounded-lg w-10 h-10 flex items-center justify-center" aria-label="Menu">
@@ -69,7 +69,7 @@
             <li><a class="block px-2 py-1.5 rounded hover:bg-blue-500/10" href="${prefix}pages/level4.html">${lvl4Label}</a></li>
             <li><a class="block px-2 py-1.5 rounded hover:bg-blue-500/10" href="${prefix}pages/admin.html">${adminLabel}</a></li>
           </ul>
-          <a href="${prefix}index.html#join" class="wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold inline-flex mt-3">${startLabel}</a>
+          <a href="${prefix}auth/index.html" class="wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold inline-flex mt-3">${startLabel}</a>
         </div>
       </div>
     </header>`;

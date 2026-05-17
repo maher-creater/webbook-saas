@@ -80,6 +80,12 @@
         <button data-tab="users" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
           <i data-lucide="users" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.users">Users</span>
         </button>
+        <button data-tab="keys" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
+          <i data-lucide="key-round" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.keys">API keys</span>
+        </button>
+        <button data-tab="ecosystem" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
+          <i data-lucide="circuit-board" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.ecosystem">Ecosystem</span>
+        </button>
         <button data-tab="config" class="tab px-4 py-2 -mb-px border-b-2 border-transparent text-sm">
           <i data-lucide="settings-2" class="w-4 h-4 inline"></i> <span data-i18n="admin.tab.config">Configuration</span>
         </button>
@@ -107,6 +113,37 @@
             </thead>
             <tbody id="usersTbody"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- API keys -->
+      <div data-tab-panel="keys" class="mt-6 hidden">
+        <div class="b30-card">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 class="font-display font-bold">Auth API keys</h3>
+              <p class="text-sm opacity-70 mt-1">Manage every key in the system. Keys let partner sites open the 2030B auth popup.</p>
+            </div>
+            <button id="adminNewKey" class="wb-btn-primary rounded-xl px-4 py-2 text-sm font-semibold inline-flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> New key
+            </button>
+          </div>
+          <div id="adminKeysList" class="mt-4 space-y-3"></div>
+          <p id="adminKeysEmpty" class="text-sm opacity-70 hidden">No API keys yet.</p>
+        </div>
+      </div>
+
+      <!-- Ecosystem currencies -->
+      <div data-tab-panel="ecosystem" class="mt-6 hidden">
+        <div class="b30-card">
+          <h3 class="font-display font-bold">Ecosystem currencies &amp; rates</h3>
+          <p class="text-sm opacity-70 mt-1">Live view of <code>ecosystem-currencies.json</code>. Edit rates here; values are persisted to localStorage in this demo and to the JSON file on the PHP backend.</p>
+          <div id="ecoGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4"></div>
+          <div class="mt-4 flex items-center gap-2">
+            <button id="ecoSave" class="wb-btn-primary rounded-lg px-4 py-2 text-sm font-semibold">Save rates</button>
+            <button id="ecoReset" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold">Reset to defaults</button>
+            <span id="ecoStatus" class="text-xs opacity-70 ml-2"></span>
+          </div>
         </div>
       </div>
 
@@ -164,9 +201,118 @@
     renderPending(pending, users);
     renderUsers(users);
     renderConfig();
+    await renderKeys();
+    await renderEcosystem();
     if (window.B30Logos) window.B30Logos.renderAuto();
     if (window.lucide) lucide.createIcons();
   }
+
+  // ---------- API keys (admin view: all keys, all users) ----------
+  async function renderKeys () {
+    const keys  = await window.B30Store.listApiKeys();
+    const users = await window.B30Store.listUsers();
+    const umap  = Object.fromEntries(users.map(u => [u.id, u]));
+    const list  = document.getElementById('adminKeysList');
+    const empty = document.getElementById('adminKeysEmpty');
+    if (!keys.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    list.innerHTML = keys.map(k => {
+      const u = umap[k.user_id] || { email: k.user_id ? '(missing)' : '(global)' };
+      return `
+      <div class="rounded-xl border border-slate-200/60 dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="b30-pill ${k.enabled ? 'b30-pill-verified' : 'b30-pill-rejected'}">
+              <i data-lucide="${k.enabled?'check':'pause'}" class="w-3 h-3"></i> ${k.enabled?'Active':'Disabled'}
+            </span>
+            <span class="font-semibold">${k.label || 'Untitled'}</span>
+            <span class="text-xs opacity-60">· owner: ${u.email}</span>
+          </div>
+          <code class="block mt-1 text-xs bg-slate-100 dark:bg-white/5 px-2 py-1 rounded break-all">${k.key}</code>
+          <p class="text-xs opacity-60 mt-1">Scopes: ${(k.scopes||[]).join(', ')} · Origins: ${(k.origins||['*']).join(', ')}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold" data-tk="${k.id}">${k.enabled?'Disable':'Enable'}</button>
+          <button class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-500" data-dk="${k.id}"><i data-lucide="trash-2" class="w-3 h-3 inline"></i> delete</button>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('[data-tk]').forEach(b => b.addEventListener('click', async () => {
+      const rec = keys.find(x => x.id === b.dataset.tk);
+      await window.B30Store.updateApiKey(b.dataset.tk, { enabled: !rec.enabled });
+      renderKeys();
+    }));
+    list.querySelectorAll('[data-dk]').forEach(b => b.addEventListener('click', async () => {
+      const ok = await Swal.fire({ icon:'warning', title:'Delete this key?', showCancelButton:true, confirmButtonText:'Delete', confirmButtonColor:'#dc2626' });
+      if (!ok.isConfirmed) return;
+      await window.B30Store.deleteApiKey(b.dataset.dk);
+      renderKeys();
+    }));
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // ---------- Ecosystem currencies ----------
+  let ecoData = null;
+  async function loadEcoConfig () {
+    const stored = localStorage.getItem('b30-ecosystem-override');
+    if (stored) { try { return JSON.parse(stored); } catch (e) {} }
+    try {
+      const res = await fetch('../ecosystem-currencies.json', { cache:'no-cache' });
+      return await res.json();
+    } catch (e) { return { projects: [] }; }
+  }
+  async function renderEcosystem () {
+    ecoData = await loadEcoConfig();
+    const grid = document.getElementById('ecoGrid');
+    grid.innerHTML = (ecoData.projects || []).map(p => `
+      <div class="rounded-xl border border-slate-200/60 dark:border-white/10 p-4">
+        <div class="flex items-center gap-3">
+          <span data-b30-currency="${p.currency}" data-primary="${p.color_primary}" data-accent="${p.color_accent}" data-size="44" class="block flex-shrink-0"></span>
+          <div class="min-w-0">
+            <p class="font-display font-bold text-sm truncate">${p.name_en}</p>
+            <p class="text-xs opacity-60">${p.currency_name_en}</p>
+          </div>
+        </div>
+        <label class="block mt-3">
+          <span class="text-xs uppercase tracking-widest opacity-70">Rate per 1 B30C</span>
+          <input type="number" step="0.01" min="0" data-eco-rate="${p.code}" value="${p.credit_to_currency_rate}" class="b30-input mt-1">
+        </label>
+        <p class="text-xs opacity-60 mt-2">Status: ${p.status} · Year: ${p.year}</p>
+      </div>`).join('');
+    if (window.B30Logos) window.B30Logos.renderAuto();
+  }
+  document.getElementById('ecoSave')?.addEventListener('click', () => {
+    if (!ecoData) return;
+    document.querySelectorAll('[data-eco-rate]').forEach(inp => {
+      const code = inp.dataset.ecoRate;
+      const p = (ecoData.projects || []).find(x => x.code === code);
+      if (p) p.credit_to_currency_rate = +inp.value || p.credit_to_currency_rate;
+    });
+    localStorage.setItem('b30-ecosystem-override', JSON.stringify(ecoData));
+    document.getElementById('ecoStatus').textContent = 'Saved locally · ' + new Date().toLocaleTimeString();
+    Swal.fire({ icon:'success', timer:900, showConfirmButton:false, title:'Ecosystem rates saved' });
+  });
+  document.getElementById('ecoReset')?.addEventListener('click', async () => {
+    localStorage.removeItem('b30-ecosystem-override');
+    await renderEcosystem();
+    document.getElementById('ecoStatus').textContent = 'Reset to defaults · ' + new Date().toLocaleTimeString();
+  });
+  document.getElementById('adminNewKey')?.addEventListener('click', async () => {
+    const { value: form } = await Swal.fire({
+      title: 'New API key (admin)',
+      html:
+        '<input id="kLabel" class="swal2-input" placeholder="Label"/>' +
+        '<input id="kOrigins" class="swal2-input" placeholder="Allowed origins (comma sep, * for any)"/>',
+      preConfirm: () => ({
+        label:   document.getElementById('kLabel').value || 'Admin key',
+        origins: (document.getElementById('kOrigins').value || '*').split(',').map(s=>s.trim()).filter(Boolean)
+      })
+    });
+    if (!form) return;
+    const rec = await window.B30Store.createApiKey({ ...form });
+    Swal.fire({ icon:'success', title:'Key created', html:`<code style="font-size:.75rem;word-break:break-all">${rec.key}</code>` });
+    renderKeys();
+  });
 
   async function renderPending(pending, users) {
     const container = document.getElementById('pendingList');

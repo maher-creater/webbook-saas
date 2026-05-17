@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in · 2030B Auth</title>
+<meta name="description" content="Beautiful authentication for the 2030B ecosystem — sign in, sign up, verify, recover. Popup-loadable via API keys." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    colors:{ blue:{500:'#3b82f6',600:'#2563eb'}, cyan:{500:'#06b6d4',600:'#0891b2'}, emerald:{500:'#22c55e',600:'#16a34a'}, amber:{500:'#f59e0b',600:'#d97706'} },
+    fontFamily:{ sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="auth.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans min-h-screen">
+
+<div class="auth-shell">
+  <!-- Left visual -->
+  <aside class="auth-aside">
+    <div class="auth-aside-inner">
+      <a href="../index.html" class="flex items-center gap-2 mb-10" aria-label="2030B home">
+        <span data-b30-logo="master" data-size="44" class="block"></span>
+        <span class="font-display font-extrabold text-xl text-white">
+          <span class="wb-gradient-text">2030B</span><span class="opacity-70 ml-1 text-sm font-semibold">Auth</span>
+        </span>
+      </a>
+      <h1 class="font-display font-extrabold text-3xl text-white leading-tight" data-i18n="auth.aside.title">One identity for the entire 2030B ecosystem.</h1>
+      <p class="text-white/70 mt-3 leading-relaxed" data-i18n="auth.aside.body">Sign in once and unlock P2P Pairing, Be Smarter (CTC), Be Honester (TIC), Be Healthier (VTC), and every project we build before 2030.</p>
+
+      <ul class="auth-feat mt-10 space-y-3">
+        <li><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> <span data-i18n="auth.aside.f1">End-to-end encrypted sessions · CSRF · bcrypt</span></li>
+        <li><i data-lucide="link" class="w-4 h-4 text-cyan-400"></i> <span data-i18n="auth.aside.f2">Embed on any domain via auth API keys</span></li>
+        <li><i data-lucide="globe" class="w-4 h-4 text-blue-400"></i> <span data-i18n="auth.aside.f3">12 languages · Arabic RTL · auto-detected</span></li>
+        <li><i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> <span data-i18n="auth.aside.f4">Email verification + Google / GitHub / X social</span></li>
+      </ul>
+
+      <p class="text-xs text-white/40 mt-10" data-i18n="auth.aside.foot">2030B refuses fiat. Identity is the gate; satisfaction is the currency.</p>
+    </div>
+  </aside>
+
+  <!-- Right form -->
+  <main class="auth-main">
+    <div class="auth-card">
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button data-auth-tab="signin" class="auth-tab is-active" data-i18n="auth.tab.signin">Sign in</button>
+        <button data-auth-tab="signup" class="auth-tab" data-i18n="auth.tab.signup">Create account</button>
+      </div>
+
+      <!-- ============== SIGN IN ============== -->
+      <section data-auth-panel="signin">
+        <h2 class="font-display font-extrabold text-2xl" data-i18n="auth.signin.title">Welcome back</h2>
+        <p class="text-sm opacity-70 mt-1" data-i18n="auth.signin.sub">Sign in to continue your P2P journey.</p>
+
+        <!-- Social -->
+        <div class="auth-social mt-5" id="socialButtons"></div>
+        <div class="auth-divider"><span data-i18n="auth.or">or with email</span></div>
+
+        <form id="signinForm" class="space-y-3" novalidate>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.email">Email</span>
+            <div class="auth-field"><i data-lucide="mail" class="w-4 h-4"></i>
+              <input type="email" name="email" required class="auth-input" placeholder="you@2030b.io" autocomplete="email">
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.password">Password</span>
+            <div class="auth-field"><i data-lucide="lock" class="w-4 h-4"></i>
+              <input type="password" name="password" required class="auth-input" autocomplete="current-password" minlength="8">
+              <button type="button" class="auth-eye" data-toggle-pw aria-label="Show password"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+          </label>
+          <div class="flex items-center justify-between text-xs">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" class="rounded"> <span data-i18n="auth.remember">Remember me</span>
+            </label>
+            <button type="button" id="forgotLink" class="text-blue-500 hover:underline" data-i18n="auth.forgot">Forgot password?</button>
+          </div>
+          <button type="submit" class="auth-submit"><i data-lucide="log-in" class="w-4 h-4"></i> <span data-i18n="auth.signin.cta">Sign in</span></button>
+        </form>
+      </section>
+
+      <!-- ============== SIGN UP ============== -->
+      <section data-auth-panel="signup" class="hidden">
+        <h2 class="font-display font-extrabold text-2xl" data-i18n="auth.signup.title">Create your 2030B account</h2>
+        <p class="text-sm opacity-70 mt-1" data-i18n="auth.signup.sub">It's free, takes 30 seconds, and unlocks every project.</p>
+
+        <div class="auth-social mt-5" id="socialButtonsUp"></div>
+        <div class="auth-divider"><span data-i18n="auth.or">or with email</span></div>
+
+        <form id="signupForm" class="space-y-3" novalidate>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.name">Full name</span>
+            <div class="auth-field"><i data-lucide="user" class="w-4 h-4"></i>
+              <input type="text" name="full_name" required class="auth-input" placeholder="Maher Belhaj" autocomplete="name">
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.email">Email</span>
+            <div class="auth-field"><i data-lucide="mail" class="w-4 h-4"></i>
+              <input type="email" name="email" required class="auth-input" placeholder="you@2030b.io" autocomplete="email">
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.password">Password</span>
+            <div class="auth-field"><i data-lucide="lock" class="w-4 h-4"></i>
+              <input type="password" name="password" required class="auth-input" autocomplete="new-password" minlength="8">
+              <button type="button" class="auth-eye" data-toggle-pw aria-label="Show password"><i data-lucide="eye" class="w-4 h-4"></i></button>
+            </div>
+            <div class="auth-pw-meter"><span></span></div>
+            <p class="text-xs opacity-60 mt-1" data-i18n="auth.passwordHint">Use 8+ characters with letters, numbers, and a symbol.</p>
+          </label>
+          <label class="flex items-start gap-2 text-xs opacity-80">
+            <input type="checkbox" name="terms" required class="rounded mt-0.5">
+            <span data-i18n="auth.terms">I agree to the 2030B terms — credits are non-monetary and used inside the 2030B ecosystem only.</span>
+          </label>
+          <button type="submit" class="auth-submit"><i data-lucide="user-plus" class="w-4 h-4"></i> <span data-i18n="auth.signup.cta">Create my account</span></button>
+        </form>
+      </section>
+
+      <!-- ============== VERIFY ============== -->
+      <section data-auth-panel="verify" class="hidden">
+        <h2 class="font-display font-extrabold text-2xl" data-i18n="auth.verify.title">Verify your email</h2>
+        <p class="text-sm opacity-70 mt-1" data-i18n="auth.verify.sub">We sent a 6-digit code to your inbox. (Demo: open the browser console.)</p>
+        <form id="verifyForm" class="space-y-3 mt-5" novalidate>
+          <div class="otp-grid" id="otpGrid">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell" autocomplete="one-time-code">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-cell">
+          </div>
+          <button type="submit" class="auth-submit"><i data-lucide="shield-check" class="w-4 h-4"></i> <span data-i18n="auth.verify.cta">Verify and continue</span></button>
+          <div class="flex items-center justify-between text-xs">
+            <button type="button" id="resendCode" class="text-blue-500 hover:underline" data-i18n="auth.verify.resend">Resend code</button>
+            <button type="button" data-auth-tab="signin" class="opacity-70 hover:opacity-100" data-i18n="auth.verify.back">Back to sign in</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============== PROFILE (post-verify, before dashboard) ============== -->
+      <section data-auth-panel="profile" class="hidden">
+        <h2 class="font-display font-extrabold text-2xl" data-i18n="auth.profile.title">Complete your trading profile</h2>
+        <p class="text-sm opacity-70 mt-1" data-i18n="auth.profile.sub">Add your Binance and/or RedotPay IDs so admin verification is fast. You can skip and add them later from your dashboard.</p>
+        <form id="profileFormAuth" class="space-y-3 mt-5" novalidate>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70 flex items-center gap-2">
+              <span data-b30-platform="binance" data-size="16" class="inline-block"></span> Binance ID (UID)
+            </span>
+            <div class="auth-field"><i data-lucide="hash" class="w-4 h-4"></i>
+              <input type="text" name="binance_id" class="auth-input" placeholder="123456789">
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70 flex items-center gap-2">
+              <span data-b30-platform="redotpay" data-size="16" class="inline-block"></span> RedotPay ID
+            </span>
+            <div class="auth-field"><i data-lucide="hash" class="w-4 h-4"></i>
+              <input type="text" name="redotpay_id" class="auth-input" placeholder="RDPmaher2030">
+            </div>
+          </label>
+          <div class="flex items-center justify-between gap-2 pt-2">
+            <button type="button" id="profileSkipAuth" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" data-i18n="profile.skip">Skip for now</button>
+            <button type="submit" class="auth-submit !w-auto px-6"><i data-lucide="check" class="w-4 h-4"></i> <span data-i18n="profile.save">Save profile</span></button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============== FORGOT ============== -->
+      <section data-auth-panel="forgot" class="hidden">
+        <h2 class="font-display font-extrabold text-2xl" data-i18n="auth.forgot.title">Reset your password</h2>
+        <p class="text-sm opacity-70 mt-1" data-i18n="auth.forgot.sub">Enter your email — we'll send you a reset link. (Demo: console.)</p>
+        <form id="forgotForm" class="space-y-3 mt-5" novalidate>
+          <label class="block">
+            <span class="text-xs uppercase tracking-widest opacity-70" data-i18n="auth.field.email">Email</span>
+            <div class="auth-field"><i data-lucide="mail" class="w-4 h-4"></i>
+              <input type="email" name="email" required class="auth-input" autocomplete="email">
+            </div>
+          </label>
+          <div class="flex items-center justify-between">
+            <button type="button" data-auth-tab="signin" class="text-xs opacity-70 hover:opacity-100" data-i18n="auth.verify.back">Back to sign in</button>
+            <button type="submit" class="auth-submit !w-auto px-6"><i data-lucide="send" class="w-4 h-4"></i> <span data-i18n="auth.forgot.cta">Send reset link</span></button>
+          </div>
+        </form>
+      </section>
+
+      <p class="auth-footer text-xs opacity-60 mt-6 text-center">
+        © 2030 · 2030B · <a href="api-keys.html" class="hover:underline" data-i18n="auth.manageKeys">Manage API keys</a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="auth.js" defer></script>
+</body>
+</html>

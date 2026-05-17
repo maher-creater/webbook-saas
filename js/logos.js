@@ -1,102 +1,169 @@
-/* 2030B P2P Pairing — SVG asset library + boot loader
- * Exposes window.B30Logos with helpers:
- *   B30Logos.master(size)          -> animated "2030B" P2P pairing logo
- *   B30Logos.wordmark(size)        -> master + "2030B" type
- *   B30Logos.feature(slug, size)   -> animated feature icon
- *   B30Logos.level(n, size)        -> animated level badge (1..4)
- *   B30Logos.platform(slug, size)  -> binance / redotpay glyphs
- *   B30Logos.FEATURES              -> array of feature metadata
- *   B30Logos.renderAuto()          -> scans [data-b30-logo], [data-b30-icon], [data-b30-level], [data-b30-platform]
+/* 2030B P2P Pairing — SVG asset library + boot loader (v2)
  *
- * BOOT LOADER: This file is loaded earliest on every page. We use it as the
- * boot vehicle for the page loader (so it shows BEFORE page paint).
+ * Loader sequence (per user spec):
+ *   (1) page elements are HIDDEN immediately (we inject a global rule that
+ *       hides <body> until the loader is gone),
+ *   (2) loader is rendered overlapping the (still-hidden) page,
+ *   (3) once window.load fires, the loader fades out,
+ *   (4) THEN .b30-page-ready is added to <html>, which un-hides the body and
+ *       launches the data-rv reveal/counter animations.
+ *
+ * Logo redesign (per user spec): the orbit-style mark is replaced by the
+ *   "Five-Beam Diamond" — a faceted diamond shape with five animated beams
+ *   converging on a central pulsing "B" tile, with a P2P swap halo. The
+ *   five beams encode the 2030B ecosystem's 5 core human dimensions
+ *   (Mind · Heart · Body · Imagination · Soul) that all 10 currencies
+ *   (CTC, TIC, VTC, INC, SCC, WPC, WDC, JEC, FLC, GRC) extend.
  */
 (function bootLoader() {
   if (window.__b30Boot) return;
   window.__b30Boot = true;
 
+  // --- (1) Hide page elements as soon as possible -----------------------
+  // Use a <style> injected to <head> so it applies before the body paints.
+  var hideCss =
+    "html:not(.b30-page-ready) body{visibility:hidden!important}" +
+    "html.b30-page-ready body{visibility:visible}" +
+    // Reveal-on-scroll: keep elements invisible until .b30-page-ready
+    "html:not(.b30-page-ready) [data-rv]{opacity:0;transform:translateY(18px)}" +
+    "html.b30-page-ready [data-rv]{transition:opacity .7s ease,transform .7s ease}" +
+    "html.b30-page-ready [data-rv].is-in{opacity:1;transform:none}";
+
+  var hs = document.createElement('style');
+  hs.id = 'b30-page-hide-css';
+  hs.textContent = hideCss;
+  (document.head || document.documentElement).appendChild(hs);
+
+  // --- Loader CSS -------------------------------------------------------
   var css =
     "#b30-loader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;"+
-    "background:radial-gradient(ellipse at center,#0b1736 0%,#04060f 100%);"+
-    "transition:opacity .55s ease,visibility .55s ease;font-family:'Space Grotesk','Inter',sans-serif}"+
+      "visibility:visible;background:radial-gradient(ellipse at center,#0b1736 0%,#04060f 100%);"+
+      "transition:opacity .55s ease,visibility .55s ease;font-family:'Space Grotesk','Inter',sans-serif}"+
     "#b30-loader.is-hidden{opacity:0;visibility:hidden;pointer-events:none}"+
-    "#b30-loader .loader-inner{display:flex;flex-direction:column;align-items:center;gap:1.25rem}"+
-    /* Orbit P2P logo */
-    ".b30-loader-orbit{width:130px;height:130px;position:relative}"+
-    ".b30-loader-orbit .core{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;"+
-      "border-radius:14px;background:linear-gradient(135deg,#3b82f6,#06b6d4,#22c55e);"+
-      "box-shadow:0 0 30px rgba(59,130,246,.55);display:flex;align-items:center;justify-content:center;"+
-      "color:#fff;font-weight:800;font-size:14px;letter-spacing:.04em;animation:b30Pulse 2.2s ease-in-out infinite}"+
-    ".b30-loader-orbit .ring{position:absolute;inset:0;border-radius:50%;"+
-      "border:2px dashed rgba(59,130,246,.45);animation:b30Spin 6s linear infinite}"+
-    ".b30-loader-orbit .ring.outer{inset:-12px;border-color:rgba(6,182,212,.35);"+
-      "animation-duration:9s;animation-direction:reverse}"+
-    ".b30-loader-orbit .node{position:absolute;width:14px;height:14px;border-radius:50%;"+
-      "background:linear-gradient(135deg,#22c55e,#06b6d4);box-shadow:0 0 14px rgba(34,197,94,.6)}"+
-    ".b30-loader-orbit .node.n1{top:-6px;left:50%;margin-left:-7px;animation:b30Float 2.4s ease-in-out infinite}"+
-    ".b30-loader-orbit .node.n2{bottom:-6px;left:50%;margin-left:-7px;background:linear-gradient(135deg,#f59e0b,#f43f5e);"+
-      "box-shadow:0 0 14px rgba(244,63,94,.55);animation:b30Float 2.4s ease-in-out -1.2s infinite}"+
-    ".b30-loader-orbit .arrow{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;"+
-      "border:2px solid transparent;border-top-color:#3b82f6;border-right-color:#06b6d4;border-radius:50%;"+
-      "animation:b30Spin 1.8s linear infinite}"+
-    "@keyframes b30Spin{to{transform:rotate(360deg)}}"+
-    "@keyframes b30Pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}"+
-    "@keyframes b30Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}"+
-    /* Sliding-gradient text */
-    "#b30-loader .loader-text{font-weight:700;font-size:1.05rem;letter-spacing:.02em;"+
+    "#b30-loader .l-inner{display:flex;flex-direction:column;align-items:center;gap:1.25rem}"+
+    "#b30-loader .l-text{font-weight:700;font-size:1.05rem;letter-spacing:.02em;"+
       "background:linear-gradient(90deg,#3b82f6,#06b6d4,#22c55e,#f59e0b,#3b82f6);"+
       "-webkit-background-clip:text;background-clip:text;color:transparent;"+
       "background-size:200% 100%;animation:b30Slide 2.6s linear infinite}"+
-    "#b30-loader .loader-sub{font-size:.78rem;color:rgba(255,255,255,.55);margin-top:-.5rem}"+
-    "#b30-loader .loader-bar{width:240px;height:3px;border-radius:99px;"+
-      "background:rgba(255,255,255,.08);overflow:hidden;position:relative}"+
-    "#b30-loader .loader-bar::after{content:\"\";position:absolute;inset:0;width:40%;"+
-      "background:linear-gradient(90deg,transparent,#3b82f6,#06b6d4,transparent);"+
-      "animation:b30Bar 1.4s ease-in-out infinite}"+
+    "#b30-loader .l-sub{font-size:.78rem;color:rgba(255,255,255,.55);margin-top:-.5rem}"+
+    "#b30-loader .l-bar{width:240px;height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;position:relative}"+
+    "#b30-loader .l-bar::after{content:'';position:absolute;inset:0;width:40%;"+
+      "background:linear-gradient(90deg,transparent,#3b82f6,#06b6d4,transparent);animation:b30Bar 1.4s ease-in-out infinite}"+
     "@keyframes b30Slide{0%{background-position:0 0}100%{background-position:200% 0}}"+
-    "@keyframes b30Bar{0%{transform:translateX(-60%)}100%{transform:translateX(260%)}}";
+    "@keyframes b30Bar{0%{transform:translateX(-60%)}100%{transform:translateX(260%)}}"+
+    /* The loader-version of the 5-beam diamond logo */
+    ".b30-diamond{width:140px;height:140px}"+
+    "@keyframes b30Pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}"+
+    "@keyframes b30BeamSweep{0%,100%{opacity:.35}50%{opacity:1}}"+
+    "@keyframes b30Spin{to{transform:rotate(360deg)}}";
 
   var s = document.createElement('style'); s.id = 'b30-loader-css'; s.textContent = css;
   (document.head || document.documentElement).appendChild(s);
+
+  function diamondSvg() {
+    return '' +
+      '<svg viewBox="0 0 200 200" class="b30-diamond" xmlns="http://www.w3.org/2000/svg" aria-label="2030B">' +
+        '<defs>' +
+          '<linearGradient id="b30LdGrad" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0%" stop-color="#3b82f6"/>' +
+            '<stop offset="55%" stop-color="#06b6d4"/>' +
+            '<stop offset="100%" stop-color="#22c55e"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="b30LdBeam" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="#06b6d4" stop-opacity=".95"/>' +
+            '<stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>' +
+          '</linearGradient>' +
+          '<radialGradient id="b30LdGlow" cx="50%" cy="50%" r="50%">' +
+            '<stop offset="0%" stop-color="#06b6d4" stop-opacity=".55"/>' +
+            '<stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>' +
+          '</radialGradient>' +
+        '</defs>' +
+        '<circle cx="100" cy="100" r="92" fill="url(#b30LdGlow)"/>' +
+        /* Five beams - 5 ecosystem dimensions */
+        '<g style="transform-origin:100px 100px">' +
+          '<rect x="98" y="6"  width="4" height="50" rx="2" fill="url(#b30LdBeam)" style="animation:b30BeamSweep 2.4s ease-in-out infinite"/>' +
+          '<rect x="98" y="6"  width="4" height="50" rx="2" fill="url(#b30LdBeam)" transform="rotate(72 100 100)"  style="animation:b30BeamSweep 2.4s ease-in-out -.5s infinite"/>' +
+          '<rect x="98" y="6"  width="4" height="50" rx="2" fill="url(#b30LdBeam)" transform="rotate(144 100 100)" style="animation:b30BeamSweep 2.4s ease-in-out -1s infinite"/>' +
+          '<rect x="98" y="6"  width="4" height="50" rx="2" fill="url(#b30LdBeam)" transform="rotate(216 100 100)" style="animation:b30BeamSweep 2.4s ease-in-out -1.5s infinite"/>' +
+          '<rect x="98" y="6"  width="4" height="50" rx="2" fill="url(#b30LdBeam)" transform="rotate(288 100 100)" style="animation:b30BeamSweep 2.4s ease-in-out -2s infinite"/>' +
+        '</g>' +
+        /* Faceted diamond */
+        '<g style="transform-origin:100px 100px;animation:b30Pulse 3.2s ease-in-out infinite">' +
+          '<polygon points="100,46 142,86 100,154 58,86" fill="url(#b30LdGrad)"/>' +
+          '<polygon points="100,46 142,86 100,86 58,86" fill="#ffffff" fill-opacity=".18"/>' +
+          '<polygon points="58,86 100,86 100,154" fill="#000000" fill-opacity=".10"/>' +
+          '<text x="100" y="112" text-anchor="middle" font-family="Space Grotesk,Inter,sans-serif" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">B</text>' +
+        '</g>' +
+      '</svg>';
+  }
 
   function build() {
     if (document.getElementById('b30-loader')) return;
     if (!document.body) return setTimeout(build, 10);
     var l = document.createElement('div');
     l.id = 'b30-loader';
-    l.setAttribute('aria-hidden', 'true');
+    l.setAttribute('aria-hidden','true');
     l.innerHTML =
-      '<div class="loader-inner">' +
-        '<div class="b30-loader-orbit">' +
-          '<div class="ring outer"></div>' +
-          '<div class="ring"></div>' +
-          '<div class="arrow"></div>' +
-          '<div class="node n1"></div>' +
-          '<div class="node n2"></div>' +
-          '<div class="core">2030B</div>' +
-        '</div>' +
-        '<div class="loader-text">Pairing your P2P credits…</div>' +
-        '<div class="loader-sub">Buy · Sell · Earn credits · Level up</div>' +
-        '<div class="loader-bar" role="progressbar" aria-label="Loading"></div>' +
+      '<div class="l-inner">' +
+        diamondSvg() +
+        '<div class="l-text">2030B P2P Pairing…</div>' +
+        '<div class="l-sub">Buy · Sell · Earn credits · Level up</div>' +
+        '<div class="l-bar" role="progressbar" aria-label="Loading"></div>' +
       '</div>';
     document.body.appendChild(l);
   }
   if (document.body) build(); else document.addEventListener('DOMContentLoaded', build, { once: true });
 
-  function hide() {
-    var l = document.getElementById('b30-loader'); if (!l) return;
-    setTimeout(function () { l.classList.add('is-hidden'); }, 200);
-    setTimeout(function () { l.parentNode && l.parentNode.removeChild(l); }, 1200);
+  // --- (3) hide loader, then (4) reveal page + start animations --------
+  function startPage() {
+    var l = document.getElementById('b30-loader');
+    if (l) l.classList.add('is-hidden');
+    // After fade-out completes, unhide the body and start the IntersectionObserver
+    setTimeout(function () {
+      document.documentElement.classList.add('b30-page-ready');
+      // start data-rv reveal animations
+      try {
+        var obs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('is-in'); });
+        }, { threshold: .12 });
+        document.querySelectorAll('[data-rv]').forEach(function (el) {
+          // elements in viewport at load should reveal immediately
+          var r = el.getBoundingClientRect();
+          if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('is-in');
+          else obs.observe(el);
+        });
+      } catch (e) { document.querySelectorAll('[data-rv]').forEach(function (el) { el.classList.add('is-in'); }); }
+      // start counters (data-counter="N")
+      document.querySelectorAll('[data-counter]').forEach(function (el) {
+        var target = +el.dataset.counter || 0;
+        var dur = 1200; var start = performance.now();
+        function tick(t) {
+          var p = Math.min(1, (t - start) / dur);
+          el.textContent = Math.floor(target * (0.2 + 0.8 * p)).toLocaleString();
+          if (p < 1) requestAnimationFrame(tick); else el.textContent = target.toLocaleString();
+        }
+        requestAnimationFrame(tick);
+      });
+      if (l && l.parentNode) setTimeout(function () { l.parentNode.removeChild(l); }, 600);
+      document.dispatchEvent(new CustomEvent('b30:page-ready'));
+    }, 550);
   }
-  if (document.readyState === 'complete') setTimeout(hide, 700);
-  else window.addEventListener('load', function () { setTimeout(hide, 400); });
-  setTimeout(hide, 6000);
+
+  function whenReady(fn) {
+    if (document.readyState === 'complete') setTimeout(fn, 350);
+    else window.addEventListener('load', function () { setTimeout(fn, 250); });
+  }
+  whenReady(startPage);
+  // Safety: never block longer than 6s
+  setTimeout(function () {
+    if (!document.documentElement.classList.contains('b30-page-ready')) startPage();
+  }, 6000);
 })();
 
 (function () {
   // ---------- FEATURE METADATA ----------
   const FEATURES = [
-    { slug:'pairing',    name:'P2P Pairing',     color:'#3b82f6', accent:'#06b6d4', desc:'Buy + Sell = 1 verified pairing = 1 credit.' },
+    { slug:'pairing',    name:'P2P Pairing',     color:'#3b82f6', accent:'#06b6d4', desc:'Buy + Sell verified pair = 1 credit.' },
     { slug:'credits',    name:'Credits System',  color:'#22c55e', accent:'#10b981', desc:'Real trades convert into the 2030B credit ledger.' },
     { slug:'levels',     name:'4 Levels',        color:'#f59e0b', accent:'#f43f5e', desc:'Climb from Level 1 to Level 4 — internal P2P unlock.' },
     { slug:'screenshot', name:'Proof Uploads',   color:'#8b5cf6', accent:'#6366f1', desc:'Upload buy & sell screenshots, validated on submit.' },
@@ -107,12 +174,16 @@
     { slug:'wallet',     name:'Virtual Wallet',  color:'#ec4899', accent:'#8b5cf6', desc:'Track your virtual profit and credit balance.' },
     { slug:'secure',     name:'Secure DB',       color:'#14b8a6', accent:'#10b981', desc:'Per-user SQLite database isolation.' },
     { slug:'admin',      name:'Admin Validation',color:'#6366f1', accent:'#8b5cf6', desc:'Manual or auto verification of trade proofs.' },
-    { slug:'future',     name:'Level 4 Internal',color:'#f43f5e', accent:'#7c3aed', desc:'Future: 2030B native internal P2P engine.' }
+    { slug:'future',     name:'Level 4 Internal',color:'#f43f5e', accent:'#7c3aed', desc:'Future: 2030B native internal P2P engine.' },
+    { slug:'auth',       name:'Auth & API keys', color:'#0ea5e9', accent:'#06b6d4', desc:'Beautiful auth, social, popup-loadable via API keys.' },
+    { slug:'ecosystem',  name:'Ecosystem bridge',color:'#a855f7', accent:'#ec4899', desc:'Convert P2P credits into 10 ecosystem currencies.' }
   ];
 
-  // ---------- MASTER LOGO ----------
-  // P2P orbit: two opposing nodes (buyer/seller) connected by a swap arrow ring,
-  // central "2030B" tile with gradient. Animated: ring spin, nodes glow, tile pulse.
+  // ---------- MASTER LOGO — "Five-Beam Diamond" ----------
+  // Geometry: a faceted diamond (top triangle, mid band, bottom point) centered
+  // on a 200x200 canvas. Five beams shoot from the diamond's vertices outward
+  // (one per ecosystem dimension). A subtle outer P2P swap halo signals the
+  // pairing intent without the orbit/rings of v1.
   function master(size = 48) {
     return `
 <svg viewBox="0 0 200 200" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="2030B P2P Pairing">
@@ -122,63 +193,62 @@
       <stop offset="55%" stop-color="#06b6d4"/>
       <stop offset="100%" stop-color="#22c55e"/>
     </linearGradient>
-    <linearGradient id="b30NodeA" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#06b6d4"/>
+    <linearGradient id="b30Beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#06b6d4" stop-opacity=".95"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="b30NodeB" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#f43f5e"/>
-    </linearGradient>
-    <radialGradient id="b30Glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#3b82f6" stop-opacity=".35"/>
+    <radialGradient id="b30HaloGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#3b82f6" stop-opacity=".35"/>
       <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- background tile -->
-  <rect x="6" y="6" width="188" height="188" rx="44" fill="url(#b30CoreGrad)" opacity=".14"/>
-  <circle cx="100" cy="100" r="92" fill="url(#b30Glow)"/>
+  <!-- soft outer glow halo -->
+  <circle cx="100" cy="100" r="92" fill="url(#b30HaloGlow)"/>
 
-  <!-- orbit ring (rotating) -->
-  <g style="transform-origin:100px 100px; animation: b30LogoSpin 14s linear infinite">
-    <circle cx="100" cy="100" r="74" fill="none" stroke="#06b6d4" stroke-width="2"
-            stroke-dasharray="6 8" opacity=".55"/>
-  </g>
-  <!-- counter ring -->
-  <g style="transform-origin:100px 100px; animation: b30LogoSpin 18s linear infinite reverse">
-    <circle cx="100" cy="100" r="86" fill="none" stroke="#3b82f6" stroke-width="1.5"
-            stroke-dasharray="2 10" opacity=".4"/>
-  </g>
-
-  <!-- swap arrows (buy <-> sell) -->
-  <g fill="none" stroke="url(#b30CoreGrad)" stroke-width="3" stroke-linecap="round">
-    <path d="M52 86 Q100 60 148 86" data-flow style="animation: b30Flow 2.4s ease-in-out infinite"/>
-    <path d="M148 86 L142 78 M148 86 L156 82" />
-    <path d="M148 114 Q100 140 52 114" data-flow style="animation: b30Flow 2.4s ease-in-out -1.2s infinite"/>
-    <path d="M52 114 L58 122 M52 114 L44 118"/>
-  </g>
-
-  <!-- buyer node (top) -->
-  <circle cx="100" cy="22" r="11" fill="url(#b30NodeA)">
-    <animate attributeName="r" values="11;13;11" dur="2.4s" repeatCount="indefinite"/>
-  </circle>
-  <!-- seller node (bottom) -->
-  <circle cx="100" cy="178" r="11" fill="url(#b30NodeB)">
-    <animate attributeName="r" values="11;13;11" dur="2.4s" begin="-1.2s" repeatCount="indefinite"/>
-  </circle>
-
-  <!-- central tile with "2030B" -->
-  <g data-spine-pulse style="transform-origin:100px 100px; animation: b30TilePulse 3.2s ease-in-out infinite">
-    <rect x="58" y="78" width="84" height="44" rx="12" fill="url(#b30CoreGrad)"/>
-    <text x="100" y="107" text-anchor="middle"
-          font-family="Space Grotesk, Inter, sans-serif"
-          font-size="22" font-weight="800" fill="#ffffff" letter-spacing="1">2030B</text>
+  <!-- five beams (one per dimension) -->
+  <g>
+    <rect x="98" y="8"  width="4" height="46" rx="2" fill="url(#b30Beam)">
+      <animate attributeName="opacity" values=".35;1;.35" dur="2.4s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="98" y="8"  width="4" height="46" rx="2" fill="url(#b30Beam)" transform="rotate(72 100 100)">
+      <animate attributeName="opacity" values=".35;1;.35" dur="2.4s" begin="-.5s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="98" y="8"  width="4" height="46" rx="2" fill="url(#b30Beam)" transform="rotate(144 100 100)">
+      <animate attributeName="opacity" values=".35;1;.35" dur="2.4s" begin="-1s"  repeatCount="indefinite"/>
+    </rect>
+    <rect x="98" y="8"  width="4" height="46" rx="2" fill="url(#b30Beam)" transform="rotate(216 100 100)">
+      <animate attributeName="opacity" values=".35;1;.35" dur="2.4s" begin="-1.5s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="98" y="8"  width="4" height="46" rx="2" fill="url(#b30Beam)" transform="rotate(288 100 100)">
+      <animate attributeName="opacity" values=".35;1;.35" dur="2.4s" begin="-2s"   repeatCount="indefinite"/>
+    </rect>
   </g>
 
-  <style>
-    @keyframes b30LogoSpin { to { transform: rotate(360deg); } }
-    @keyframes b30TilePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-    @keyframes b30Flow { 0%,100% { stroke-dashoffset: 0; opacity:.95 } 50% { opacity:.55 } }
-  </style>
+  <!-- P2P swap halo (subtle arrows around the diamond) -->
+  <g fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" opacity=".55">
+    <path d="M28 100 a72 72 0 0 1 144 0"  stroke-dasharray="4 8">
+      <animate attributeName="stroke-dashoffset" from="0" to="-24" dur="3.2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M172 100 a72 72 0 0 1 -144 0" stroke-dasharray="4 8" stroke="#22c55e">
+      <animate attributeName="stroke-dashoffset" from="0" to="24" dur="3.2s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- faceted diamond -->
+  <g>
+    <polygon points="100,46 142,86 100,154 58,86" fill="url(#b30CoreGrad)">
+      <animateTransform attributeName="transform" type="scale" values="1;1.06;1" dur="3.2s" repeatCount="indefinite" additive="sum"/>
+    </polygon>
+    <!-- top facet highlight -->
+    <polygon points="100,46 142,86 100,86 58,86" fill="#ffffff" fill-opacity=".18"/>
+    <!-- bottom facet shadow -->
+    <polygon points="58,86 100,86 100,154" fill="#000000" fill-opacity=".10"/>
+    <polygon points="142,86 100,86 100,154" fill="#000000" fill-opacity=".18"/>
+    <!-- engraved "B" -->
+    <text x="100" y="112" text-anchor="middle" font-family="Space Grotesk, Inter, sans-serif"
+          font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">B</text>
+  </g>
 </svg>`;
   }
 
@@ -227,7 +297,15 @@
                    <path d="M58 32 L66 28 L70 32 L70 38 L66 42 L58 38 Z" fill="#fff" stroke="none"/>`,
     'future':     `<path d="M28 50 L72 50"/>
                    <path d="M60 38 L72 50 L60 62" fill="none"/>
-                   <circle cx="50" cy="50" r="28" stroke-dasharray="3 4"/>`
+                   <circle cx="50" cy="50" r="28" stroke-dasharray="3 4"/>`,
+    'auth':       `<rect x="30" y="44" width="40" height="32" rx="4"/>
+                   <path d="M38 44 V36 a12 12 0 0 1 24 0 V44"/>
+                   <circle cx="50" cy="60" r="4" fill="#fff" stroke="none"/>`,
+    'ecosystem':  `<circle cx="50" cy="50" r="6" fill="#fff" stroke="none"/>
+                   <circle cx="50" cy="22" r="6"/><circle cx="74" cy="38" r="6"/>
+                   <circle cx="74" cy="62" r="6"/><circle cx="50" cy="78" r="6"/>
+                   <circle cx="26" cy="62" r="6"/><circle cx="26" cy="38" r="6"/>
+                   <path d="M50 28 L50 44 M68 42 L54 48 M68 58 L54 52 M50 72 L50 56 M32 58 L46 52 M32 42 L46 48"/>`
   };
 
   function feature(slug, size = 64) {
@@ -287,12 +365,31 @@
   </g>
 </svg>`;
     }
-    // redotpay
     return `
 <svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-label="RedotPay">
   <rect x="2" y="2" width="96" height="96" rx="20" fill="#ffffff"/>
   <circle cx="50" cy="50" r="28" fill="none" stroke="#ef4444" stroke-width="6"/>
   <circle cx="50" cy="50" r="10" fill="#ef4444"/>
+</svg>`;
+  }
+
+  // ---------- ECOSYSTEM CURRENCY BADGE ----------
+  // Tiny circular badge for ecosystem currency tokens (CTC, TIC, VTC, ...).
+  function currency(symbol, primary, accent, size = 56) {
+    primary = primary || '#3b82f6'; accent = accent || '#06b6d4';
+    const id = `b30-cur-${symbol}`;
+    return `
+<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-label="${symbol}">
+  <defs>
+    <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${primary}"/>
+      <stop offset="100%" stop-color="${accent}"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="46" fill="url(#${id})"/>
+  <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff" stroke-opacity=".4" stroke-width="2"/>
+  <text x="50" y="58" text-anchor="middle" font-family="Space Grotesk,Inter,sans-serif"
+        font-size="22" font-weight="800" fill="#ffffff" letter-spacing="1">${symbol}</text>
 </svg>`;
   }
 
@@ -319,10 +416,14 @@
       const size = parseInt(el.dataset.size || '40', 10);
       el.innerHTML = platform(slug, size);
     });
+    document.querySelectorAll('[data-b30-currency]').forEach(el => {
+      const sym = el.dataset.b30Currency;
+      const size = parseInt(el.dataset.size || '56', 10);
+      el.innerHTML = currency(sym, el.dataset.primary, el.dataset.accent, size);
+    });
   }
 
-  window.B30Logos = { master, wordmark, feature, level, platform, FEATURES, renderAuto };
-  // also expose legacy alias for code paths that still expect WBLogos.renderAuto()
+  window.B30Logos = { master, wordmark, feature, level, platform, currency, FEATURES, renderAuto };
   window.WBLogos = window.WBLogos || { renderAuto };
   document.addEventListener('DOMContentLoaded', renderAuto);
 })();

@@ -1,8 +1,21 @@
 # 2030B P2P Pairing — turn real P2P trades into 2030B credits
 
 > **Buy + Sell on Binance or RedotPay → upload screenshots → earn credits → climb 4 levels → unlock 2030B's internal P2P.**
+>
+> *2030B refuses fiat money. The only currency it accepts is human satisfaction encoded as P2P credits — and P2P credits power every project's currency in the broader 2030B ecosystem (CTC, TIC, VTC, INC, SCC, WPC, WDC, JEC, FLC, GRC).*
 
 A multilingual, multi-currency, gamified credit ecosystem built on **PHP 8 + SQLite** (per-user databases), **vanilla JS + Tailwind CSS + SweetAlert2**, and a fully working **client-side simulation** (IndexedDB) so the whole product can also run as a static demo without a server.
+
+## What's new in v2
+
+- **Level 1 = ONE single P2P op** (buy *or* sell). No pairing required. After your first verified op, the dashboard recommends adding your Binance / RedotPay ID.
+- **`ecosystem-currencies.json`** — single source of truth for the 10 ecosystem currencies (Be Smarter / CTC, Be Honester / TIC, Be Healthier / VTC, Be Creater / INC, Be Kinder / SCC, Be Braver / WPC, Be Wiser / WDC, Be Fairer / JEC, Be Freer / FLC, Be Grateful / GRC). Includes per-project `credit_to_currency_rate` and is consumed by P2P, every ecosystem website, and the admin panel.
+- **`auth/` folder** — beautiful split-screen authentication UI with email verification, social sign-in (Google / GitHub / X / Facebook), forgot-password flow, post-verify profile completion, and a JSON API (`auth/api/`) that can be opened in a popup from any external domain using auth API keys.
+- **API key management** — user-facing page at `auth/api-keys.html` to create/revoke their own keys + embed snippet generator; an `API keys` tab in the admin panel to see and gate every key in the system.
+- **Profile completion** — after auth + email verification, users get a beautiful modal asking for Binance ID (UID) and RedotPay ID, with regex validation and SweetAlert2 notifications.
+- **Five-Beam Diamond logo** (replaces v1's orbit). Five animated beams converge on a faceted "B" diamond — one beam per ecosystem human dimension.
+- **Fixed loader sequence**: page elements are hidden first (via a CSS rule injected in `<head>`) → loader is shown → on `window.load` the loader fades → `html.b30-page-ready` is added, which un-hides the body and only then starts data-rv reveals and counters.
+- **Full translations** for all 12 languages (es, de, pt, it, zh, hi, ja, ru, tr were stubs in v1 — now translated for all major UI strings; i18n still falls back to English for any gaps).
 
 ---
 

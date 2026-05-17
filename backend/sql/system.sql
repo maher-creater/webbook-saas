@@ -64,3 +64,54 @@ CREATE TABLE IF NOT EXISTS lvl4_waitlist (
     reason      TEXT,
     created_at  INTEGER NOT NULL
 );
+
+-- ===============================================================
+-- Profile completion + email verification + ecosystem currencies
+-- ===============================================================
+ALTER TABLE users ADD COLUMN total_operations    INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN binance_id          TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN redotpay_id         TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN profile_completed   INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN email_verified      INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN email_verify_code   TEXT;
+ALTER TABLE users ADD COLUMN auth_provider       TEXT NOT NULL DEFAULT 'password';
+
+-- Auth API keys (for popup-embed on external domains)
+CREATE TABLE IF NOT EXISTS api_keys (
+    id          TEXT PRIMARY KEY,
+    user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    label       TEXT NOT NULL,
+    key         TEXT NOT NULL UNIQUE,
+    scopes      TEXT NOT NULL DEFAULT '["auth:read","auth:popup"]', -- JSON array
+    origins     TEXT NOT NULL DEFAULT '["*"]',                       -- JSON array
+    enabled     INTEGER NOT NULL DEFAULT 1,
+    created_at  INTEGER NOT NULL,
+    last_used   INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_keys_user ON api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_keys_key  ON api_keys(key);
+
+-- Ecosystem currency ledger (per user, per project)
+CREATE TABLE IF NOT EXISTS ecosystem_balances (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_code    TEXT NOT NULL,        -- e.g. 'BE_SMARTER'
+    currency        TEXT NOT NULL,        -- e.g. 'CTC'
+    balance         REAL NOT NULL DEFAULT 0,
+    updated_at      INTEGER NOT NULL,
+    UNIQUE (user_id, project_code)
+);
+CREATE INDEX IF NOT EXISTS idx_ebal_user ON ecosystem_balances(user_id);
+
+-- Redemption history (credits -> currency)
+CREATE TABLE IF NOT EXISTS ecosystem_redemptions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_code    TEXT NOT NULL,
+    currency        TEXT NOT NULL,
+    credits_spent   REAL NOT NULL,
+    rate            REAL NOT NULL,
+    amount_minted   REAL NOT NULL,
+    created_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_eredeem_user ON ecosystem_redemptions(user_id);

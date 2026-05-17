@@ -1,0 +1,171 @@
+/* 2030B Auth UI — split-screen card with animated aurora aside */
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .auth-shell { grid-template-columns: 1.05fr 1fr; }
+}
+
+/* Left visual */
+.auth-aside {
+  position: relative;
+  display: none;
+  background: radial-gradient(120% 100% at 0% 0%, #0e2a6b 0%, #0b1736 45%, #04060f 100%);
+  overflow: hidden;
+}
+.auth-aside::before, .auth-aside::after {
+  content:""; position:absolute; border-radius:50%; filter:blur(80px); opacity:.55;
+}
+.auth-aside::before {
+  width: 60vmin; height: 60vmin; left:-10vmin; top:-10vmin;
+  background: radial-gradient(circle, #3b82f6 0%, transparent 60%);
+  animation: aurora1 14s ease-in-out infinite;
+}
+.auth-aside::after {
+  width: 50vmin; height: 50vmin; right:-10vmin; bottom:-10vmin;
+  background: radial-gradient(circle, #22c55e 0%, transparent 60%);
+  animation: aurora2 18s ease-in-out infinite;
+}
+@keyframes aurora1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,40px) scale(1.1)} }
+@keyframes aurora2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,-20px) scale(1.05)} }
+@media (min-width: 1024px) { .auth-aside { display:block; } }
+.auth-aside-inner {
+  position: relative; z-index: 1;
+  padding: 4rem 3.5rem;
+  height: 100%;
+  display: flex; flex-direction: column;
+}
+.auth-feat li {
+  display:flex; align-items:center; gap:.6rem;
+  color: rgba(255,255,255,.85);
+  font-size: .9rem;
+}
+
+/* Right card */
+.auth-main {
+  display: flex; align-items: center; justify-content: center;
+  padding: 2rem 1rem;
+}
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(255,255,255,.8);
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 20px 60px -20px rgba(15,23,42,.25);
+  backdrop-filter: blur(8px);
+}
+.dark .auth-card {
+  background: rgba(15,23,42,.55);
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,.5);
+}
+
+/* Tabs */
+.auth-tabs { display:flex; gap:.25rem; padding:.25rem; background: rgba(15,23,42,.05); border-radius: 9999px; margin-bottom: 1.25rem; }
+.dark .auth-tabs { background: rgba(255,255,255,.05); }
+.auth-tab {
+  flex:1; padding: .55rem .75rem; border-radius: 9999px;
+  font-weight:600; font-size:.85rem; color:#64748b;
+  transition: all .25s ease;
+}
+.auth-tab.is-active {
+  background: linear-gradient(135deg,#3b82f6,#06b6d4);
+  color: #fff;
+  box-shadow: 0 8px 20px -10px rgba(59,130,246,.55);
+}
+
+/* Fields */
+.auth-field {
+  margin-top: .35rem;
+  display: flex; align-items: center; gap: .55rem;
+  padding: .55rem .85rem;
+  background: rgba(15,23,42,.04);
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: .75rem;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.dark .auth-field { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); }
+.auth-field:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+}
+.auth-input {
+  flex:1; background: transparent; border:0; outline:0;
+  font-size: .95rem; color: inherit;
+  padding: .15rem 0;
+}
+.auth-input::placeholder { color: rgba(100,116,139,.55); }
+.auth-eye { opacity:.5; transition: opacity .2s; }
+.auth-eye:hover { opacity:1; }
+
+/* Submit */
+.auth-submit {
+  width: 100%; margin-top: .75rem;
+  padding: .7rem 1rem;
+  background: linear-gradient(135deg,#3b82f6,#06b6d4,#22c55e);
+  background-size: 200% 100%;
+  color: #fff; font-weight: 700; font-size: .95rem;
+  border-radius: .75rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  transition: background-position .4s, transform .15s, box-shadow .2s;
+  box-shadow: 0 12px 30px -12px rgba(59,130,246,.55);
+}
+.auth-submit:hover { background-position: 100% 0; transform: translateY(-1px); }
+.auth-submit:active { transform: translateY(0); }
+
+/* Social row */
+.auth-social { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.auth-social .btn {
+  display:flex; align-items:center; justify-content:center; gap:.5rem;
+  padding: .55rem .75rem;
+  background: rgba(15,23,42,.04);
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: .75rem;
+  font-weight:600; font-size:.85rem;
+  transition: background .15s, transform .15s;
+}
+.dark .auth-social .btn { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); }
+.auth-social .btn:hover { transform: translateY(-1px); background: rgba(15,23,42,.06); }
+.dark .auth-social .btn:hover { background: rgba(255,255,255,.08); }
+
+/* Divider */
+.auth-divider {
+  display:flex; align-items:center; gap:.5rem;
+  margin: 1rem 0;
+  color: rgba(100,116,139,.7); font-size:.75rem; text-transform: uppercase; letter-spacing:.05em;
+}
+.auth-divider::before, .auth-divider::after {
+  content:""; flex:1; height:1px; background: rgba(100,116,139,.15);
+}
+
+/* Password meter */
+.auth-pw-meter { margin-top:.5rem; height:4px; border-radius:9999px; background: rgba(100,116,139,.15); overflow:hidden; }
+.auth-pw-meter > span { display:block; height:100%; width:0; transition: width .25s ease, background .25s ease; background:#ef4444; }
+.auth-pw-meter[data-strength="1"] > span { width: 25%; background:#ef4444; }
+.auth-pw-meter[data-strength="2"] > span { width: 50%; background:#f59e0b; }
+.auth-pw-meter[data-strength="3"] > span { width: 75%; background:#06b6d4; }
+.auth-pw-meter[data-strength="4"] > span { width:100%; background:#22c55e; }
+
+/* OTP cells */
+.otp-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:.5rem; }
+.otp-cell {
+  text-align:center; font-size:1.4rem; font-weight:700;
+  padding: .65rem 0;
+  background: rgba(15,23,42,.04);
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: .75rem;
+  outline:0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.dark .otp-cell { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); color:#fff; }
+.otp-cell:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.15); }
+
+/* Popup mode (embedded via API key) */
+body.b30-auth-popup .auth-shell { grid-template-columns: 1fr; }
+body.b30-auth-popup .auth-aside { display: none; }
+body.b30-auth-popup .auth-main { padding: 1rem; }
+body.b30-auth-popup .auth-card { max-width: 100%; }
