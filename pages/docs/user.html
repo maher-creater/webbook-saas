@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>User Guide · 2030B P2P Pairing</title>
+<meta name="description" content="End-user documentation for 2030B P2P Pairing: signup, pairing, levels, credits, ecosystem." />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],display:['"Space Grotesk"','"Inter"','sans-serif']}}}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../../css/style.css">
+<script src="../../js/logos.js"></script>
+<script src="../../js/config.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/store.js"></script>
+<script src="../../js/shell.js" defer></script>
+<script src="../../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[260px_1fr] gap-8">
+
+    <aside class="lg:sticky lg:top-28 self-start">
+      <div class="b30-card">
+        <p class="text-[10px] uppercase tracking-widest opacity-60" data-i18n="docs.section">Documentation</p>
+        <h2 class="font-display font-bold text-lg mb-2" data-i18n="docs.user.title">User guide</h2>
+        <ul class="space-y-1 text-sm">
+          <li><a class="hover:text-blue-500 block py-1" href="#start" data-i18n="docs.u.toc.start">Getting started</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#signup" data-i18n="docs.u.toc.signup">Sign up &amp; verify</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#providers" data-i18n="docs.u.toc.providers">Choose a P2P provider</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#pairing" data-i18n="docs.u.toc.pairing">Submit a pairing</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#screenshots" data-i18n="docs.u.toc.shots">Screenshot rules</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#levels" data-i18n="docs.u.toc.levels">Levels &amp; credits</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#ecosystem" data-i18n="docs.u.toc.eco">Redeem ecosystem currencies</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#affiliate" data-i18n="docs.u.toc.aff">Affiliate</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#privacy" data-i18n="docs.u.toc.priv">Privacy &amp; GDPR</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#faq" data-i18n="docs.u.toc.faq">FAQ</a></li>
+        </ul>
+        <div class="mt-4 border-t border-slate-200/40 dark:border-white/10 pt-3 text-xs">
+          <p class="opacity-60 mb-2" data-i18n="docs.otherRoles">Other roles</p>
+          <a href="super-admin.html" class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.super">Super-Admin manual</a>
+          <a href="admin.html"       class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.admin">Sub-admin manual</a>
+          <a href="affiliate.html"   class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.affiliate">Affiliate program</a>
+          <a href="api.html"         class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.api">Auth API</a>
+        </div>
+      </div>
+    </aside>
+
+    <article class="space-y-10 leading-relaxed">
+
+      <header>
+        <span class="wb-chip"><i data-lucide="user" class="w-3 h-3 inline"></i> <span data-i18n="docs.u.chip">User guide</span></span>
+        <h1 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="docs.u.h1">2030B P2P Pairing — User guide</h1>
+        <p class="mt-2 opacity-80 max-w-3xl" data-i18n="docs.u.lead">Earn credits by doing the simple thing you already do: buy USDT, sell USDT. Each verified buy + sell pair gives you 1 credit. Credits unlock levels and can be redeemed into our ecosystem currencies.</p>
+      </header>
+
+      <section id="start" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.start.h">Getting started in 3 steps</h2>
+        <ol class="list-decimal pl-5 mt-3 text-sm space-y-1">
+          <li data-i18n="docs.u.start.s1">Sign up at <a href="../../auth/index.html" class="text-blue-500 underline">/auth</a> with your email + password.</li>
+          <li data-i18n="docs.u.start.s2">Complete your profile (country, exchange UID, phone).</li>
+          <li data-i18n="docs.u.start.s3">Submit your first pairing from <a href="../dashboard.html" class="text-blue-500 underline">your dashboard</a>.</li>
+        </ol>
+      </section>
+
+      <section id="signup" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.signup.h">Sign up &amp; verify</h2>
+        <p class="mt-2" data-i18n="docs.u.signup.p1">Password must be at least <code>security.json &gt; auth.password_min_length</code> characters. After signup you get an 8-character verification code — paste it into the verify panel.</p>
+        <p class="mt-2 text-sm opacity-80" data-i18n="docs.u.signup.p2">If you arrived via someone's affiliate link (<code>?ref=CODE</code>), they automatically become your referrer at signup — nothing for you to do.</p>
+      </section>
+
+      <section id="providers" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.prov.h">Choose a P2P provider</h2>
+        <p class="mt-2" data-i18n="docs.u.prov.p1">The platform supports multiple exchanges (Binance, RedotPay, and any others the super-admin enables). Each provider has its own min USDT, fee, supported fiat, and level requirement. The dashboard wizard shows only the providers you can use at your current level.</p>
+      </section>
+
+      <section id="pairing" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.pair.h">Submit a pairing</h2>
+        <ol class="list-decimal pl-5 mt-3 text-sm space-y-1">
+          <li data-i18n="docs.u.pair.s1">Click <strong>Add pairing</strong> on the dashboard.</li>
+          <li data-i18n="docs.u.pair.s2">Step 1: pick the provider.</li>
+          <li data-i18n="docs.u.pair.s3">Step 2: enter your <em>buy</em> details (USDT, fiat amount, fiat currency, date) and upload the buy screenshot.</li>
+          <li data-i18n="docs.u.pair.s4">Step 3: enter your <em>sell</em> details and screenshot.</li>
+          <li data-i18n="docs.u.pair.s5">Step 4: review. Submit. Status is <code>pending</code> until a sub-admin verifies.</li>
+        </ol>
+      </section>
+
+      <section id="screenshots" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.shots.h">Screenshot rules</h2>
+        <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+          <li data-i18n="docs.u.shots.b1">Show <strong>UID</strong>, <strong>amount</strong>, <strong>date</strong>, <strong>status</strong> — no crops.</li>
+          <li data-i18n="docs.u.shots.b2">PNG, JPG, or WEBP only. Max 5&nbsp;MB.</li>
+          <li data-i18n="docs.u.shots.b3">No edits, no annotations. EXIF is stripped on upload.</li>
+          <li data-i18n="docs.u.shots.b4">Re-using a screenshot triggers automatic perceptual-hash detection → instant penalty.</li>
+        </ul>
+      </section>
+
+      <section id="levels" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.levels.h">Levels &amp; credits</h2>
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase opacity-70"><tr><th class="text-left p-2">Level</th><th class="text-left p-2">Requirement</th></tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">L1</td><td class="p-2">1 verified pairing</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">L2</td><td class="p-2">L1 + 3 RedotPay ops + 1 RedotPay pairing</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">L3</td><td class="p-2">L2 + 20 Binance ops + 1 Binance pairing</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">L4</td><td class="p-2">L3 + 100 total pairings (invitation-only waitlist)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-3 text-sm" data-i18n="docs.u.levels.p1">Each verified pairing = <strong>1 credit</strong>. Credits never expire.</p>
+      </section>
+
+      <section id="ecosystem" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.eco.h">Redeem ecosystem currencies</h2>
+        <p class="mt-2" data-i18n="docs.u.eco.p1">2030B credits are <em>keys</em> — they unlock currencies in 10 sister projects (CTC for cybersecurity, GTC for gaming, HTC for health, …). Each project has its own rate. Browse them on the <a href="../solutions.html" class="text-blue-500 underline">Solutions</a> page.</p>
+      </section>
+
+      <section id="affiliate" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.aff.h">Affiliate</h2>
+        <p class="mt-2" data-i18n="docs.u.aff.p1">You earn extra credits when friends sign up with your link and verify pairings. See the <a href="affiliate.html" class="text-blue-500 underline">Affiliate program docs</a>.</p>
+      </section>
+
+      <section id="privacy" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.priv.h">Privacy &amp; GDPR</h2>
+        <p class="mt-2" data-i18n="docs.u.priv.p1">You can export or delete your data anytime from <em>Profile → Privacy</em>. After deletion, your account is anonymized (referral history kept for ledger integrity). Retention is configured in <code>security.json &gt; data_privacy</code>.</p>
+      </section>
+
+      <section id="faq" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.u.faq.h">FAQ</h2>
+        <details class="mt-3"><summary class="cursor-pointer font-semibold text-sm" data-i18n="docs.u.faq.q1">How long does verification take?</summary><p class="mt-2 text-sm opacity-80" data-i18n="docs.u.faq.a1">Usually under 24 hours. You'll see the status flip in your dashboard.</p></details>
+        <details class="mt-3"><summary class="cursor-pointer font-semibold text-sm" data-i18n="docs.u.faq.q2">My pairing was rejected — can I appeal?</summary><p class="mt-2 text-sm opacity-80" data-i18n="docs.u.faq.a2">Yes — open the rejected card, click <em>Appeal</em>, and add evidence. A different admin reviews appeals.</p></details>
+        <details class="mt-3"><summary class="cursor-pointer font-semibold text-sm" data-i18n="docs.u.faq.q3">Do I need to sell to the same person I bought from?</summary><p class="mt-2 text-sm opacity-80" data-i18n="docs.u.faq.a3">No. Both legs just need to be real P2P transactions on the same provider.</p></details>
+        <details class="mt-3"><summary class="cursor-pointer font-semibold text-sm" data-i18n="docs.u.faq.q4">What happens to my credits if I lose my account?</summary><p class="mt-2 text-sm opacity-80" data-i18n="docs.u.faq.a4">Sign up with the same email and contact a super-admin — the audit log lets us restore your balance.</p></details>
+      </section>
+
+    </article>
+  </div>
+</main>
+
+<div data-shell-foot></div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Affiliate · 2030B P2P Pairing</title>
+<meta name="description" content="Share your 2030B affiliate link and earn credits when your referrals verify pairings." />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <header class="text-center max-w-2xl mx-auto" data-rv>
+      <span class="wb-chip"><i data-lucide="gift" class="w-3 h-3 inline"></i> <span data-i18n="affiliate.chip">Affiliate program</span></span>
+      <h1 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="affiliate.title">Earn credits by sharing 2030B</h1>
+      <p class="mt-2 opacity-80" data-i18n="affiliate.sub">Every time someone signs up with your link and verifies a pairing, you earn a percentage of their credits — automatically, forever.</p>
+    </header>
+
+    <!-- Need login -->
+    <section id="affGate" class="b30-card max-w-md mx-auto mt-8 p-6 text-center hidden">
+      <i data-lucide="lock" class="w-8 h-8 mx-auto text-amber-500"></i>
+      <p class="mt-3 font-display font-bold" data-i18n="affiliate.signinTitle">Sign in to get your link</p>
+      <p class="text-sm opacity-70 mt-2" data-i18n="affiliate.signinSub">You need a 2030B account to receive your unique referral code.</p>
+      <a href="../auth/index.html" class="wb-btn-primary rounded-lg px-4 py-2 mt-4 inline-flex font-semibold text-sm" data-i18n="cta.signIn">Sign in</a>
+    </section>
+
+    <section id="affPanel" class="hidden">
+      <!-- Link card -->
+      <div class="b30-card mt-8 p-6" data-rv data-rv-delay="1">
+        <div class="grid sm:grid-cols-[1fr_auto] gap-4 items-center">
+          <div>
+            <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="affiliate.yourCode">Your referral code</p>
+            <p class="font-display font-extrabold text-2xl mt-1" id="affCode">—</p>
+            <p class="text-xs opacity-70 mt-1" id="affPercent">—</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnCopyCode" class="wb-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span data-i18n="affiliate.copyCode">Copy code</span>
+            </button>
+            <button id="btnCopyLink" class="wb-btn-primary rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+              <i data-lucide="link" class="w-3.5 h-3.5"></i> <span data-i18n="affiliate.copy">Copy link</span>
+            </button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <code id="affLink" class="block w-full px-3 py-2 rounded-lg bg-slate-100 dark:bg-white/5 text-xs break-all">—</code>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <a id="affShareWA" href="#" target="_blank" rel="noopener" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold"><i data-lucide="message-circle" class="w-3.5 h-3.5 inline"></i> WhatsApp</a>
+          <a id="affShareX" href="#" target="_blank" rel="noopener" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold"><i data-lucide="send" class="w-3.5 h-3.5 inline"></i> X / Twitter</a>
+          <a id="affShareTG" href="#" target="_blank" rel="noopener" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold"><i data-lucide="paper-plane" class="w-3.5 h-3.5 inline"></i> Telegram</a>
+          <a id="affShareMail" href="#" class="wb-btn-ghost rounded-lg px-3 py-1.5 text-xs font-semibold"><i data-lucide="mail" class="w-3.5 h-3.5 inline"></i> Email</a>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid sm:grid-cols-3 gap-4 mt-6">
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="affiliate.kpi.referrals">Referrals</p>
+          <p class="wb-stat-num font-display text-3xl" id="kRef">0</p>
+        </div>
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="affiliate.kpi.rewards">Rewards</p>
+          <p class="wb-stat-num font-display text-3xl" id="kRew">0</p>
+        </div>
+        <div class="b30-card">
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="affiliate.kpi.credits">Credits earned</p>
+          <p class="wb-stat-num font-display text-3xl" id="kCr">0</p>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div class="mt-8 grid lg:grid-cols-2 gap-4">
+        <div class="b30-card">
+          <h3 class="font-display font-bold" data-i18n="affiliate.referrals">Your referrals</h3>
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-sm">
+              <thead class="text-xs uppercase opacity-70">
+                <tr>
+                  <th class="text-left p-2" data-i18n="affiliate.col.when">When</th>
+                  <th class="text-left p-2" data-i18n="affiliate.col.who">Who</th>
+                </tr>
+              </thead>
+              <tbody id="refTbody"><tr><td class="p-3 text-center opacity-60" colspan="2" data-i18n="affiliate.noRefs">No referrals yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="b30-card">
+          <h3 class="font-display font-bold" data-i18n="affiliate.rewards">Credit kick-backs</h3>
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-sm">
+              <thead class="text-xs uppercase opacity-70">
+                <tr>
+                  <th class="text-left p-2" data-i18n="affiliate.col.when">When</th>
+                  <th class="text-left p-2" data-i18n="affiliate.col.from">From</th>
+                  <th class="text-right p-2" data-i18n="affiliate.col.credits">Credits</th>
+                </tr>
+              </thead>
+              <tbody id="rewTbody"><tr><td class="p-3 text-center opacity-60" colspan="3" data-i18n="affiliate.noRew">No rewards yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation -->
+      <div class="b30-key-hint mt-8">
+        <i data-lucide="info" class="w-4 h-4 text-blue-500 flex-shrink-0"></i>
+        <span data-i18n="affiliate.explain">Credits are the keys to every premium feature in the 2030B ecosystem. By sharing your link, you help others join AND increase your own access.</span>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  function whenReady(fn) {
+    Promise.all([
+      new Promise(r => window.B30Config.onLoad(r)),
+      window.B30I18n.ready(),
+      window.B30Store.ready()
+    ]).then(([c]) => fn(c));
+  }
+  function t(k, fb){ const v = window.B30I18n.t(k); return (v && v !== k) ? v : (fb||k); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  async function copy(text) { try { await navigator.clipboard.writeText(text); }
+    catch(e) { const a=document.createElement('textarea'); a.value=text; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); } }
+
+  whenReady(async (cfg) => {
+    const ses = window.B30Store.getSession();
+    if (!ses) { document.getElementById('affGate').classList.remove('hidden'); return; }
+    document.getElementById('affPanel').classList.remove('hidden');
+
+    const user = await window.B30Store.getUser(ses.id);
+    if (!user) { document.getElementById('affGate').classList.remove('hidden'); document.getElementById('affPanel').classList.add('hidden'); return; }
+    const code = user.referral_code || '';
+    const base = location.origin + (cfg.public_base_path || '');
+    const link = code ? `${base}/auth/index.html?ref=${encodeURIComponent(code)}` : '';
+
+    document.getElementById('affCode').textContent = code || '—';
+    document.getElementById('affLink').textContent = link || '—';
+    const aff = cfg.affiliate_program || {};
+    document.getElementById('affPercent').textContent =
+      (t('affiliate.percentInfo','You earn {pct}% of every verified pairing your referrals submit.') || '')
+        .replace('{pct}', aff.percent || 10);
+
+    const shareText = (t('affiliate.share','Join 2030B and turn your P2P trades into credits! Use my link:') || '') + ' ' + link;
+    document.getElementById('affShareWA').href = 'https://wa.me/?text=' + encodeURIComponent(shareText);
+    document.getElementById('affShareX').href  = 'https://x.com/intent/tweet?text=' + encodeURIComponent(shareText);
+    document.getElementById('affShareTG').href = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(t('affiliate.share','Join 2030B!'));
+    document.getElementById('affShareMail').href = 'mailto:?subject=' + encodeURIComponent(t('affiliate.emailSubject','Join me on 2030B'))
+                                                + '&body=' + encodeURIComponent(shareText);
+
+    document.getElementById('btnCopyCode').onclick = async () => {
+      if (!code) return; await copy(code);
+      Swal.fire({ icon:'success', toast:true, position:'top-end', timer:1300, showConfirmButton:false, title: t('affiliate.copiedCode','Code copied!') });
+    };
+    document.getElementById('btnCopyLink').onclick = async () => {
+      if (!link) return; await copy(link);
+      Swal.fire({ icon:'success', toast:true, position:'top-end', timer:1300, showConfirmButton:false, title: t('affiliate.copied','Affiliate link copied!') });
+    };
+
+    const refs = await window.B30Store.listReferrals(user.id);
+    const rew  = await window.B30Store.listAffiliateRewards({ referrerId: user.id });
+    document.getElementById('kRef').textContent = refs.length;
+    document.getElementById('kRew').textContent = rew.length;
+    document.getElementById('kCr').textContent  = rew.reduce((s,r)=>s+(+r.credits_awarded||0),0).toFixed(2);
+
+    const users = await window.B30Store.listUsers();
+    const uMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    if (refs.length) {
+      refs.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+      document.getElementById('refTbody').innerHTML = refs.map(r => {
+        const ree = uMap[r.referee_id] || { email:'?' };
+        return `<tr class="border-t border-slate-200/40 dark:border-white/5">
+          <td class="p-2 text-xs opacity-70">${new Date(r.created_at).toLocaleString()}</td>
+          <td class="p-2">${esc(ree.email)}</td>
+        </tr>`;
+      }).join('');
+    }
+    if (rew.length) {
+      rew.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+      document.getElementById('rewTbody').innerHTML = rew.map(r => {
+        const ree = uMap[r.referee_id] || { email:'?' };
+        return `<tr class="border-t border-slate-200/40 dark:border-white/5">
+          <td class="p-2 text-xs opacity-70">${new Date(r.created_at).toLocaleString()}</td>
+          <td class="p-2">${esc(ree.email)}</td>
+          <td class="p-2 text-right font-semibold text-emerald-500">+${(+r.credits_awarded||0).toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+    }
+    if (window.lucide) lucide.createIcons();
+  });
+})();
+</script>
+</body>
+</html>

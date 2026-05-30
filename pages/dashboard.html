@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — 2030B P2P Pairing</title>
+<meta name="description" content="Track your credits, levels, and P2P pairings in your 2030B dashboard." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: {
+    colors: { blue:{500:'#3b82f6',600:'#2563eb'}, cyan:{500:'#06b6d4',600:'#0891b2'}, emerald:{500:'#22c55e',600:'#16a34a'}, amber:{500:'#f59e0b',600:'#d97706'} },
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header strip -->
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="font-display font-extrabold text-3xl text-slate-900 dark:text-white" id="dashWelcome">Dashboard</h1>
+        <p class="mt-1 text-slate-600 dark:text-slate-400" id="dashSubtitle">—</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnAddOp" class="wb-btn-ghost rounded-xl px-4 py-2.5 font-semibold inline-flex items-center gap-2 border border-slate-300 dark:border-white/10">
+          <i data-lucide="zap" class="w-4 h-4"></i> <span data-i18n="cta.addOp">Add single op</span>
+        </button>
+        <button id="btnAddPairing" class="wb-btn-primary rounded-xl px-5 py-2.5 font-semibold inline-flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="cta.addPairing">Add new pairing</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Profile completion banner (shown if Binance/RedotPay IDs are missing AFTER a verified op) -->
+    <div id="profileBanner" class="hidden mt-6 b30-card border border-amber-500/40 bg-amber-500/5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <span class="rounded-full bg-amber-500/15 text-amber-500 w-10 h-10 inline-flex items-center justify-center flex-shrink-0">
+            <i data-lucide="badge-info" class="w-5 h-5"></i>
+          </span>
+          <div>
+            <p class="font-display font-bold" data-i18n="profile.banner.title">Complete your trading profile</p>
+            <p class="text-sm opacity-80 mt-1" id="profileBannerHint" data-i18n="profile.banner.hint">Add your Binance and/or RedotPay IDs so we can verify your operations faster.</p>
+          </div>
+        </div>
+        <button id="btnOpenProfile" class="wb-btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-4 h-4"></i> <span data-i18n="profile.banner.cta">Complete profile</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stat row -->
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8" data-rv>
+      <div class="b30-card flex items-center gap-4">
+        <span data-b30-level="1" data-size="56" id="dashLevelBadge"></span>
+        <div>
+          <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="dash.level">Level</p>
+          <p class="font-display font-extrabold text-2xl" id="statLevel">0</p>
+        </div>
+      </div>
+      <div class="b30-card">
+        <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="dash.credits">Credits</p>
+        <p class="wb-stat-num font-display text-3xl" id="statCredits">0</p>
+      </div>
+      <div class="b30-card">
+        <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="dash.pairings">Pairings</p>
+        <p class="wb-stat-num font-display text-3xl" id="statPairings">0</p>
+      </div>
+      <div class="b30-card">
+        <p class="text-xs uppercase tracking-widest opacity-70" data-i18n="dash.profit">Virtual profit</p>
+        <p class="font-display text-2xl font-bold text-emerald-500" id="statProfit">+0</p>
+      </div>
+    </div>
+
+    <!-- Progress to next level -->
+    <div class="b30-card mt-6" data-rv data-rv-delay="1">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-display font-bold text-lg" data-i18n="dash.nextLevel">Progress to next level</h2>
+        <span class="text-xs opacity-70" id="dashNextHint">—</span>
+      </div>
+      <div id="dashProgress" class="grid sm:grid-cols-2 gap-4"></div>
+    </div>
+
+    <!-- Credits-are-keys banner -->
+    <div class="b30-key-hint mt-8" data-rv data-rv-delay="1">
+      <i data-lucide="key-round" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
+      <span data-i18n="dash.creditsKeys">Your B30C credits are the keys to every premium feature in the 2030B ecosystem.</span>
+    </div>
+
+    <!-- Affiliate quick widget -->
+    <div class="b30-card mt-6 flex flex-wrap items-center justify-between gap-4" id="affiliateWidget" data-rv data-rv-delay="2">
+      <div class="flex items-center gap-3">
+        <span class="rounded-full bg-blue-500/15 text-blue-500 w-10 h-10 inline-flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5"></i></span>
+        <div>
+          <p class="font-display font-bold" data-i18n="affiliate.short.title">Your affiliate link</p>
+          <p class="text-xs opacity-70" id="affiliateSub" data-i18n="affiliate.short.sub">Share to earn extra credits on every verified pairing.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <code id="affiliateCode" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-xs font-mono">—</code>
+        <button id="btnCopyRef" class="wb-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span data-i18n="affiliate.copy">Copy link</span>
+        </button>
+        <a href="affiliate.html" class="wb-btn-primary rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+          <span data-i18n="affiliate.open">Open</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent activity (pairings + single ops) -->
+    <div class="mt-8" data-rv data-rv-delay="3">
+      <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h2 class="font-display font-bold text-xl" data-i18n="dash.recentActivity">Recent activity</h2>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1 text-xs">
+            <button data-act-filter="all"      class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10 is-active" data-i18n="filter.all">All</button>
+            <button data-act-filter="pending"  class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.pending">Pending</button>
+            <button data-act-filter="verified" class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.verified">Verified</button>
+            <button data-act-filter="rejected" class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.rejected">Rejected</button>
+          </div>
+          <span class="text-xs opacity-70" id="pairingsCount">0</span>
+        </div>
+      </div>
+      <div id="pairingsList" class="space-y-3">
+        <!-- populated -->
+      </div>
+      <div id="pairingsEmpty" class="b30-card text-center py-10 hidden">
+        <span data-b30-icon="pairing" data-size="56" class="inline-block"></span>
+        <p class="mt-4 text-slate-600 dark:text-slate-400" data-i18n="dash.noPairings">No pairings yet — add your first one to unlock Level 1.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<!-- ====== Add Pairing Modal ====== -->
+<div id="pairModal" class="b30-modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="b30-modal p-6 sm:p-8">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display font-extrabold text-2xl" data-i18n="pairing.title">Add a new pairing</h2>
+      <button class="wb-btn-ghost rounded-lg w-9 h-9 flex items-center justify-center" id="pairClose" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="flex items-center justify-between mt-5">
+      <div class="b30-step-dots" id="pairDots">
+        <span class="b30-step-dot is-active"></span>
+        <span class="b30-step-dot"></span>
+        <span class="b30-step-dot"></span>
+        <span class="b30-step-dot"></span>
+      </div>
+      <span class="text-xs uppercase tracking-widest opacity-70" id="pairStepLabel">1 / 4 · <span data-i18n="pairing.step.platform">Platform</span></span>
+    </div>
+
+    <form id="pairForm" class="mt-6" novalidate>
+      <!-- Step 1: platform (populated dynamically from p2p-providers.json) -->
+      <div data-pair-step="1">
+        <p class="text-sm opacity-70 mb-3" data-i18n="pairing.platform.hint">Choose the platform where you executed this pairing.</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pairPlatforms">
+          <!-- providers injected by JS -->
+        </div>
+      </div>
+
+      <!-- Step 2: buy -->
+      <div data-pair-step="2" class="hidden">
+        <h3 class="font-display font-bold mb-3 text-emerald-500 flex items-center gap-2"><i data-lucide="arrow-down-circle" class="w-5 h-5"></i> <span data-i18n="pairing.step.buy">Buy leg</span></h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.usdt">Amount (USDT)</span>
+            <input type="number" step="0.001" min="0.001" required name="buy_usdt" class="b30-input mt-1">
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.fiat">Fiat amount</span>
+            <input type="number" step="0.01" min="0" required name="buy_fiat" class="b30-input mt-1">
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.currency">Currency</span>
+            <select name="buy_currency" class="b30-input mt-1" data-currency-options></select>
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.date">Date</span>
+            <input type="date" required name="buy_date" class="b30-input mt-1">
+          </label>
+        </div>
+        <label class="block mt-4">
+          <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
+          <div class="b30-drop mt-2" data-drop="buy">
+            <input type="file" accept="image/png,image/jpeg,image/webp" name="buy_file" class="hidden" data-required="1">
+            <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
+            <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
+            <p class="text-xs opacity-60 mt-1" data-drop-name></p>
+          </div>
+        </label>
+      </div>
+
+      <!-- Step 3: sell -->
+      <div data-pair-step="3" class="hidden">
+        <h3 class="font-display font-bold mb-3 text-amber-500 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-5 h-5"></i> <span data-i18n="pairing.step.sell">Sell leg</span></h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.usdt">Amount (USDT)</span>
+            <input type="number" step="0.001" min="0.001" required name="sell_usdt" class="b30-input mt-1">
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.fiat">Fiat amount</span>
+            <input type="number" step="0.01" min="0" required name="sell_fiat" class="b30-input mt-1">
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.currency">Currency</span>
+            <select name="sell_currency" class="b30-input mt-1" data-currency-options></select>
+          </label>
+          <label class="block">
+            <span class="text-sm font-medium" data-i18n="pairing.field.date">Date</span>
+            <input type="date" required name="sell_date" class="b30-input mt-1">
+          </label>
+        </div>
+        <label class="block mt-4">
+          <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
+          <div class="b30-drop mt-2" data-drop="sell">
+            <input type="file" accept="image/png,image/jpeg,image/webp" name="sell_file" class="hidden" data-required="1">
+            <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
+            <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
+            <p class="text-xs opacity-60 mt-1" data-drop-name></p>
+          </div>
+        </label>
+      </div>
+
+      <!-- Step 4: review -->
+      <div data-pair-step="4" class="hidden">
+        <h3 class="font-display font-bold mb-3" data-i18n="pairing.step.review">Review & submit</h3>
+        <div id="pairReview" class="rounded-xl bg-slate-100 dark:bg-white/5 p-5 text-sm space-y-2"></div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between">
+        <button type="button" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" id="pairBack">
+          <i data-lucide="arrow-left" class="w-4 h-4 inline" data-flip-x></i> <span data-i18n="cta.back">Back</span>
+        </button>
+        <button type="button" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold" id="pairNext">
+          <span data-i18n="cta.next">Next</span> <i data-lucide="arrow-right" class="w-4 h-4 inline" data-flip-x></i>
+        </button>
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold hidden" id="pairSubmit">
+          <i data-lucide="check" class="w-4 h-4 inline"></i> <span data-i18n="cta.submit">Submit</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====== Quick single-op Modal (Level 1 friendly) ====== -->
+<div id="opModal" class="b30-modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="b30-modal p-6 sm:p-8">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display font-extrabold text-2xl" data-i18n="op.title">Add a single P2P op</h2>
+      <button class="wb-btn-ghost rounded-lg w-9 h-9 flex items-center justify-center" id="opClose" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <p class="text-sm opacity-70 mt-2" data-i18n="op.subtitle">For Level 1 you only need ONE verified P2P op — buy OR sell — on Binance or RedotPay.</p>
+
+    <form id="opForm" class="mt-5 space-y-4" novalidate>
+      <!-- platform (populated dynamically) -->
+      <div>
+        <label class="text-sm font-medium" data-i18n="op.field.platform">Platform</label>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2" id="opPlatforms">
+          <!-- providers injected by JS -->
+        </div>
+      </div>
+      <!-- type -->
+      <div>
+        <label class="text-sm font-medium" data-i18n="op.field.type">Type</label>
+        <div class="grid grid-cols-2 gap-3 mt-2">
+          <label class="b30-card b30-tile cursor-pointer text-center p-3">
+            <input type="radio" name="op_type" value="buy" class="sr-only" required>
+            <i data-lucide="arrow-down-circle" class="w-5 h-5 mx-auto text-emerald-500"></i>
+            <p class="font-semibold mt-1 text-sm" data-i18n="op.type.buy">Buy</p>
+          </label>
+          <label class="b30-card b30-tile cursor-pointer text-center p-3">
+            <input type="radio" name="op_type" value="sell" class="sr-only" required>
+            <i data-lucide="arrow-up-circle" class="w-5 h-5 mx-auto text-amber-500"></i>
+            <p class="font-semibold mt-1 text-sm" data-i18n="op.type.sell">Sell</p>
+          </label>
+        </div>
+      </div>
+      <!-- numbers -->
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.usdt">Amount (USDT)</span>
+          <input type="number" step="0.001" min="0.001" required name="op_usdt" class="b30-input mt-1">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.fiat">Fiat amount</span>
+          <input type="number" step="0.01" min="0" required name="op_fiat" class="b30-input mt-1">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.currency">Currency</span>
+          <select name="op_currency" class="b30-input mt-1" data-currency-options></select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium" data-i18n="pairing.field.date">Date</span>
+          <input type="date" required name="op_date" class="b30-input mt-1">
+        </label>
+      </div>
+      <!-- screenshot -->
+      <label class="block">
+        <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
+        <div class="b30-drop mt-2" data-drop="op">
+          <input type="file" accept="image/png,image/jpeg,image/webp" name="op_file" class="hidden" data-required="1">
+          <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
+          <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
+          <p class="text-xs opacity-60 mt-1" data-drop-name></p>
+        </div>
+      </label>
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" id="opCancel" data-i18n="cta.cancel">Cancel</button>
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> <span data-i18n="cta.submit">Submit</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====== Profile completion modal ====== -->
+<div id="profileModal" class="b30-modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="b30-modal p-6 sm:p-8">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display font-extrabold text-2xl" data-i18n="profile.title">Complete your profile</h2>
+      <button class="wb-btn-ghost rounded-lg w-9 h-9 flex items-center justify-center" id="profileClose" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <p class="text-sm opacity-70 mt-2" data-i18n="profile.subtitle">Add your Binance &amp; RedotPay IDs so admin verification is fast. You can fill one or both.</p>
+
+    <form id="profileForm" class="mt-5 space-y-4" novalidate>
+      <label class="block">
+        <span class="text-sm font-medium flex items-center gap-2">
+          <span data-b30-platform="binance" data-size="20" class="inline-block"></span>
+          <span data-i18n="profile.binance">Binance ID (UID)</span>
+        </span>
+        <input type="text" name="binance_id" class="b30-input mt-1" placeholder="e.g. 123456789" autocomplete="off">
+        <p class="text-xs opacity-60 mt-1" data-i18n="profile.binance.hint">6–20 digits from your Binance account profile.</p>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium flex items-center gap-2">
+          <span data-b30-platform="redotpay" data-size="20" class="inline-block"></span>
+          <span data-i18n="profile.redotpay">RedotPay ID</span>
+        </span>
+        <input type="text" name="redotpay_id" class="b30-input mt-1" placeholder="e.g. RDPmaher2030" autocomplete="off">
+        <p class="text-xs opacity-60 mt-1" data-i18n="profile.redotpay.hint">4–32 chars (letters, digits, _ or -).</p>
+      </label>
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" class="wb-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold" id="profileSkip" data-i18n="profile.skip">Skip for now</button>
+        <button type="submit" class="wb-btn-primary rounded-lg px-5 py-2 text-sm font-semibold inline-flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> <span data-i18n="profile.save">Save profile</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+/* ====================== DASHBOARD GLUE ====================== */
+(function () {
+  let cfg = null, ready = false;
+  function whenReady(fn) {
+    Promise.all([
+      new Promise(r => window.B30Config.onLoad(r)),
+      window.B30I18n.ready(),
+      window.B30Store.ready()
+    ]).then(([c]) => { cfg = c; ready = true; fn(c); });
+  }
+
+  function requireSession() {
+    const ses = window.B30Store.getSession();
+    if (ses) return ses;
+    Swal.fire({
+      icon: 'info',
+      title: window.B30I18n.t('aside.user.signinPrompt') || 'Sign in required',
+      confirmButtonText: 'Sign in'
+    }).then(() => location.href = '../index.html#join');
+    return null;
+  }
+
+  function levelRequirementText(level, cfgL, user) {
+    if (level === 1) {
+      const reqOps = (cfgL.required_operations != null) ? cfgL.required_operations : 1;
+      return [{ label: window.B30I18n.t('dash.progress.totalOps') || 'Verified P2P operations (buy or sell)', cur: user.total_operations || 0, req: reqOps }];
+    }
+    if (level === 2) {
+      return [
+        { label: window.B30I18n.t('dash.progress.redotpayOps') || 'RedotPay operations', cur: user.redotpay_ops_count, req: cfgL.required_redotpay_operations },
+        { label: window.B30I18n.t('dash.progress.redotpayPair') || 'RedotPay pairings', cur: user.redotpay_pairings_count, req: cfgL.required_redotpay_pairings }
+      ];
+    }
+    if (level === 3) {
+      return [
+        { label: window.B30I18n.t('dash.progress.binanceOps') || 'Binance operations', cur: user.binance_ops_count, req: cfgL.required_binance_operations },
+        { label: window.B30I18n.t('dash.progress.binancePair') || 'Binance pairings', cur: user.binance_pairings_count, req: cfgL.required_binance_pairings }
+      ];
+    }
+    if (level === 4) {
+      return [{ label: window.B30I18n.t('dash.progress.totalPair') || 'Total verified pairings', cur: user.total_pairings, req: cfgL.required_pairings || 100 }];
+    }
+    return [];
+  }
+
+  let refresh = async function () {
+    const ses = requireSession(); if (!ses) return;
+    const user = await window.B30Store.getUser(ses.id);
+    if (!user) return;
+    const i18n = window.B30I18n;
+
+    document.getElementById('dashWelcome').textContent = i18n.t('dash.welcome', { name: user.full_name || user.email });
+    document.getElementById('dashSubtitle').textContent = `${user.country_code} · ${user.email}`;
+    document.getElementById('statLevel').textContent = user.level;
+    document.getElementById('statCredits').textContent = user.total_credits || 0;
+    document.getElementById('statPairings').textContent = user.total_pairings || 0;
+
+    const lvlBadge = document.getElementById('dashLevelBadge');
+    lvlBadge.dataset.b30Level = Math.max(1, user.level || 1);
+    window.B30Logos.renderAuto();
+
+    // Sum profits
+    const pairs = await window.B30Store.listPairings(user.id);
+    const profitByCur = {};
+    pairs.forEach(p => {
+      if (p.status === 'verified') {
+        profitByCur[p.fiat_currency] = (profitByCur[p.fiat_currency] || 0) + (p.profit_fiat || 0);
+      }
+    });
+    const profStr = Object.entries(profitByCur).map(([c,v]) => `+${v.toFixed(2)} ${c}`).join(' · ') || `+0 ${cfg.default_fiat_currency}`;
+    document.getElementById('statProfit').textContent = profStr;
+
+    // Progress to next level
+    const nextLvl = Math.min(4, (user.level || 0) + 1);
+    const cfgL = (cfg.levels && cfg.levels[String(nextLvl)]) || {};
+    document.getElementById('dashNextHint').textContent =
+      i18n.t('dash.locked', null) && nextLvl <= 4
+        ? `→ ${cfgL.title || ('Level ' + nextLvl)}`
+        : '';
+    const items = levelRequirementText(nextLvl, cfgL, user);
+    document.getElementById('dashProgress').innerHTML = items.map(it => {
+      const pct = Math.min(100, Math.round((it.cur / Math.max(1, it.req)) * 100));
+      return `
+        <div>
+          <div class="flex items-center justify-between text-sm mb-1.5">
+            <span class="font-medium">${it.label}</span>
+            <span class="opacity-70">${it.cur} / ${it.req}</span>
+          </div>
+          <div class="b30-progress"><span style="width:${pct}%"></span></div>
+        </div>`;
+    }).join('') || '<p class="text-sm opacity-70">You reached the highest defined level.</p>';
+
+    // Combined activity list (pairings + single ops) with thumbs
+    await renderActivity(user, pairs);
+
+    // Affiliate widget
+    try {
+      const cfgAff = (cfg.affiliate_program || {});
+      const refCode = user.referral_code || '';
+      const base = location.origin + (cfg.public_base_path || '') + '/auth/index.html';
+      const link = refCode ? `${base}?ref=${encodeURIComponent(refCode)}` : '';
+      document.getElementById('affiliateCode').textContent = refCode || '—';
+      const cp = document.getElementById('btnCopyRef');
+      if (cp) {
+        cp.onclick = async () => {
+          if (!link) return;
+          try { await navigator.clipboard.writeText(link); }
+          catch(e) { /* fallback */ }
+          Swal.fire({ icon:'success', toast:true, position:'top-end', timer:1400, showConfirmButton:false,
+            title: window.B30I18n.t('affiliate.copied') || 'Affiliate link copied!' });
+        };
+      }
+      document.getElementById('affiliateSub').textContent =
+        (window.B30I18n.t('affiliate.short.sub') || 'Share to earn extra credits on every verified pairing.') +
+        (cfgAff.percent ? ` (${cfgAff.percent}%)` : '');
+    } catch(e) {}
+
+    if (window.B30Logos) window.B30Logos.renderAuto();
+    if (window.lucide) lucide.createIcons();
+  };
+
+  // Activity = pairings + single ops, with thumbnails and filters
+  let activityCache = [];
+  let activityFilter = 'all';
+  async function renderActivity(user, pairs) {
+    const list = document.getElementById('pairingsList');
+    const empty = document.getElementById('pairingsEmpty');
+    // Pull single ops (transactions with single_op === true)
+    const txs = (await window.B30Store.listTransactions(user.id)) || [];
+    const singleOps = txs.filter(t => t.single_op === true);
+
+    // Resolve thumbnails for all referenced screenshots
+    async function thumbFor(id) {
+      if (!id) return null;
+      try { const sc = await window.B30Store.getScreenshot(id); return (sc && sc.data_url) || null; }
+      catch(e) { return null; }
+    }
+    const items = [];
+    for (const p of pairs) {
+      const thumbs = [];
+      const b = await thumbFor(p.buy_screenshot_id);
+      const s = await thumbFor(p.sell_screenshot_id);
+      if (b) thumbs.push(b); if (s) thumbs.push(s);
+      items.push({
+        kind: 'pair', id: p.pairing_id, ts: p.pairing_date,
+        title: `${p.platform[0].toUpperCase()+p.platform.slice(1)} · ${window.B30I18n.t('activity.pair') || 'Pairing'} ${p.pairing_id.slice(-5)}`,
+        platform: p.platform, status: p.status,
+        profit_fiat: p.profit_fiat || 0, fiat_currency: p.fiat_currency,
+        credits_earned: p.credits_earned || 0,
+        thumbs
+      });
+    }
+    for (const t of singleOps) {
+      const th = await thumbFor(t.screenshot_id);
+      items.push({
+        kind: 'op', id: t.id, ts: t.transaction_date || t.created_at,
+        title: `${(t.platform||'').toUpperCase()} · ${(window.B30I18n.t('op.type.'+t.type) || t.type).toString().toUpperCase()} ${t.amount_usdt} USDT`,
+        platform: t.platform, status: t.status,
+        profit_fiat: 0, fiat_currency: t.fiat_currency,
+        credits_earned: t.credits_earned || 0,
+        thumbs: th ? [th] : []
+      });
+    }
+    items.sort((a,b) => (b.ts||0) - (a.ts||0));
+    activityCache = items;
+    paintActivity();
+
+    // Wire filter buttons
+    document.querySelectorAll('[data-act-filter]').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('[data-act-filter]').forEach(b => b.classList.remove('is-active','bg-blue-500/10'));
+        btn.classList.add('is-active','bg-blue-500/10');
+        activityFilter = btn.dataset.actFilter;
+        paintActivity();
+      };
+    });
+
+    function paintActivity() {
+      const filtered = activityCache.filter(it =>
+        activityFilter === 'all' || it.status === activityFilter
+      );
+      document.getElementById('pairingsCount').textContent = `${filtered.length} / ${activityCache.length}`;
+      if (filtered.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      list.innerHTML = filtered.map(it => `
+        <div class="b30-card flex flex-wrap items-center justify-between gap-3 b30-tile">
+          <div class="flex items-center gap-3 min-w-0">
+            <span data-b30-platform="${it.platform}" data-size="36"></span>
+            <div class="min-w-0">
+              <p class="text-xs uppercase opacity-60">${new Date(it.ts).toLocaleString()}</p>
+              <p class="font-semibold truncate">${it.title}</p>
+              <p class="text-[11px] opacity-60 mt-0.5">${it.kind === 'pair' ? (window.B30I18n.t('activity.kindPair') || 'Pair (buy + sell)') : (window.B30I18n.t('activity.kindOp') || 'Single op')}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            ${it.thumbs.map(src => `<img src="${src}" class="b30-thumb" data-img-popup alt="screenshot">`).join('') || `<span class="text-[11px] opacity-60">${window.B30I18n.t('activity.noShot') || 'No screenshot'}</span>`}
+          </div>
+          <div class="flex items-center gap-4 text-sm">
+            ${it.kind === 'pair' ? `
+              <div class="text-right">
+                <p class="text-xs uppercase opacity-60">${window.B30I18n.t('dash.profit') || 'Profit'}</p>
+                <p class="font-bold ${it.profit_fiat >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${(it.profit_fiat>=0?'+':'')}${(it.profit_fiat||0).toFixed(2)} ${it.fiat_currency||''}</p>
+              </div>` : ''
+            }
+            <div class="text-right">
+              <p class="text-xs uppercase opacity-60">${window.B30I18n.t('dash.credits') || 'Credits'}</p>
+              <p class="font-bold">${it.credits_earned}</p>
+            </div>
+            <span class="b30-pill b30-pill-${it.status}">
+              <i data-lucide="${it.status==='verified'?'check-circle':it.status==='rejected'?'x-circle':'clock'}" class="w-3 h-3"></i>
+              ${window.B30I18n.t('status.' + it.status) || it.status}
+            </span>
+          </div>
+        </div>`).join('');
+      // Wire thumbnail popups
+      list.querySelectorAll('[data-img-popup]').forEach(img => {
+        img.addEventListener('click', () => {
+          Swal.fire({
+            imageUrl: img.src,
+            imageAlt: 'screenshot',
+            imageWidth: 'auto',
+            imageHeight: 'auto',
+            width: 'auto',
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: '#0f172a',
+            customClass: { image: 'rounded-lg max-h-[80vh]' }
+          });
+        });
+      });
+      if (window.B30Logos) window.B30Logos.renderAuto();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  // ---------------- Provider tiles renderer ----------------
+  function lang() { try { return window.B30I18n.current(); } catch(e) { return 'en'; } }
+  function provName(p) { return p['name_'+lang()] || p.name_en || p.code; }
+  function renderProviderTiles(containerId, inputName, size) {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const provs = (window.B30Store.getEnabledProviders && window.B30Store.getEnabledProviders()) || [];
+    c.innerHTML = provs.map(p => `
+      <label class="b30-card b30-tile cursor-pointer text-center p-4">
+        <input type="radio" name="${inputName}" value="${p.code}" class="sr-only" required>
+        <span data-b30-platform="${p.code}" data-size="${size}" class="inline-block"></span>
+        <p class="mt-2 font-display font-bold text-sm">${provName(p)}</p>
+        <p class="text-[11px] opacity-70 mt-1">${window.B30I18n.t('pairing.minSell') || 'Min sell'}: ${p.min_usdt_sell||0} USDT · L${p.level_required||1}</p>
+      </label>`).join('');
+    if (window.B30Logos) window.B30Logos.renderAuto();
+  }
+
+  // ---------------- Add Pairing wizard ----------------
+  function setupPairWizard() {
+    const modal = document.getElementById('pairModal');
+    const form  = document.getElementById('pairForm');
+    const dots  = modal.querySelectorAll('.b30-step-dot');
+    const label = document.getElementById('pairStepLabel');
+    const back  = document.getElementById('pairBack');
+    const next  = document.getElementById('pairNext');
+    const sub   = document.getElementById('pairSubmit');
+    let step = 1;
+    const stepLabels = { 1:'pairing.step.platform', 2:'pairing.step.buy', 3:'pairing.step.sell', 4:'pairing.step.review' };
+
+    // Populate currency selects from config
+    function fillCurrencies() {
+      const opts = (cfg.supported_fiat_currencies || ['USD','TND','EUR']).map(c =>
+        `<option value="${c}" ${c===cfg.default_fiat_currency?'selected':''}>${c}</option>`
+      ).join('');
+      modal.querySelectorAll('[data-currency-options]').forEach(s => s.innerHTML = opts);
+    }
+
+    function show(n) {
+      step = n;
+      modal.querySelectorAll('[data-pair-step]').forEach(el => el.classList.toggle('hidden', +el.dataset.pairStep !== n));
+      dots.forEach((d,i) => {
+        d.classList.toggle('is-active', i === n-1);
+        d.classList.toggle('is-done',   i <  n-1);
+      });
+      const k = stepLabels[n] || stepLabels[1];
+      const t = window.B30I18n.t(k);
+      label.innerHTML = `${n} / 4 · <span data-i18n="${k}">${t}</span>`;
+      back.style.visibility = n === 1 ? 'hidden' : 'visible';
+      next.classList.toggle('hidden', n === 4);
+      sub.classList.toggle('hidden', n !== 4);
+      if (n === 4) renderReview();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function validateStep() {
+      if (step === 1) {
+        const r = form.querySelector('input[name="platform"]:checked');
+        if (!r) { Swal.fire({icon:'warning', title:'Choose a platform'}); return false; }
+        return true;
+      }
+      if (step === 2 || step === 3) {
+        const sel = `[data-pair-step="${step}"] [required]`;
+        for (const f of modal.querySelectorAll(sel)) {
+          if (!f.value || !f.checkValidity()) { f.focus(); f.reportValidity(); return false; }
+        }
+        // manual file validation (hidden file inputs)
+        const fileInput = modal.querySelector(`[data-pair-step="${step}"] input[type=file]`);
+        const file = fileInput && fileInput.files[0];
+        if (!file) {
+          Swal.fire({ icon:'warning',
+            title: window.B30I18n.t('pairing.toast.noFile') || 'Upload required',
+            text:  window.B30I18n.t('pairing.toast.noFileBody') || 'Please attach a screenshot to continue.' });
+          return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          Swal.fire({icon:'error', title: window.B30I18n.t('pairing.toast.tooBig') || 'File too big'});
+          return false;
+        }
+        if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+          Swal.fire({icon:'error', title: window.B30I18n.t('pairing.toast.badType') || 'Only PNG / JPG / WEBP images are allowed.'});
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function renderReview() {
+      const d = new FormData(form);
+      const buyUsdt = +d.get('buy_usdt'),  buyFiat = +d.get('buy_fiat');
+      const sellUsdt= +d.get('sell_usdt'), sellFiat= +d.get('sell_fiat');
+      const profit = sellFiat * (1 - (cfg.fees.sell_fee_percent||0)/100)
+                   - buyFiat  * (1 + (cfg.fees.buy_fee_percent||0)/100);
+      document.getElementById('pairReview').innerHTML = `
+        <div class="grid grid-cols-2 gap-y-2">
+          <span class="opacity-70">Platform</span><span class="font-medium">${d.get('platform')}</span>
+          <span class="opacity-70">Buy</span><span class="font-medium">${buyUsdt} USDT for ${buyFiat} ${d.get('buy_currency')}</span>
+          <span class="opacity-70">Sell</span><span class="font-medium">${sellUsdt} USDT for ${sellFiat} ${d.get('sell_currency')}</span>
+          <span class="opacity-70" data-i18n="pairing.review.profit">Estimated profit</span><span class="font-semibold ${profit>=0?'text-emerald-500':'text-rose-500'}">${(profit>=0?'+':'')}${profit.toFixed(2)} ${d.get('buy_currency')}</span>
+          <span class="opacity-70" data-i18n="pairing.review.credit">Credit on verification</span><span class="font-semibold">+${cfg.credits_per_pairing || 1}</span>
+        </div>`;
+    }
+
+    function open() {
+      // Pre-fill today's dates
+      const today = new Date().toISOString().slice(0,10);
+      modal.querySelectorAll('input[type=date]').forEach(i => { if (!i.value) i.value = today; });
+      fillCurrencies();
+      renderProviderTiles('pairPlatforms', 'platform', 48);
+      form.reset();
+      modal.querySelectorAll('[data-drop-name]').forEach(e => e.textContent = '');
+      show(1);
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+
+    document.getElementById('btnAddPairing').addEventListener('click', open);
+    document.getElementById('pairClose').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    next.addEventListener('click', () => { if (validateStep()) show(Math.min(4, step + 1)); });
+    back.addEventListener('click', () => show(Math.max(1, step - 1)));
+
+    // drop zone interactions
+    modal.querySelectorAll('.b30-drop').forEach(drop => {
+      const input = drop.querySelector('input[type=file]');
+      const name  = drop.querySelector('[data-drop-name]');
+      drop.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => { if (input.files[0]) name.textContent = input.files[0].name; });
+      ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+      ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
+      drop.addEventListener('drop', e => {
+        const f = e.dataTransfer.files[0];
+        if (f) { const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files; name.textContent = f.name; }
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ses = window.B30Store.getSession();
+      if (!ses) return;
+      const d = new FormData(form);
+      try {
+        const { pairing } = await window.B30Store.createPairing({
+          userId: ses.id,
+          platform: d.get('platform'),
+          buy:  { amount_usdt:+d.get('buy_usdt'),  amount_fiat:+d.get('buy_fiat'),  fiat_currency:d.get('buy_currency'),  transaction_date: +new Date(d.get('buy_date')) },
+          sell: { amount_usdt:+d.get('sell_usdt'), amount_fiat:+d.get('sell_fiat'), fiat_currency:d.get('sell_currency'), transaction_date: +new Date(d.get('sell_date')) },
+          screenshots: {
+            buy:  d.get('buy_file'),
+            sell: d.get('sell_file')
+          }
+        });
+        Swal.fire({ icon:'success', timer:1500, showConfirmButton:false,
+          title: window.B30I18n.t('pairing.toast.submitted') || 'Pairing submitted for verification.' });
+        close();
+        await refresh();
+      } catch (err) {
+        Swal.fire({ icon:'error', title: err.message || 'Submission failed' });
+      }
+    });
+  }
+
+  // ---------------- Quick single-op modal ----------------
+  function setupOpModal() {
+    const modal = document.getElementById('opModal');
+    const form  = document.getElementById('opForm');
+    function fillCurrencies() {
+      const opts = (cfg.supported_fiat_currencies || ['USD','TND','EUR']).map(c =>
+        `<option value="${c}" ${c===cfg.default_fiat_currency?'selected':''}>${c}</option>`
+      ).join('');
+      modal.querySelectorAll('[data-currency-options]').forEach(s => s.innerHTML = opts);
+    }
+    function open() {
+      const today = new Date().toISOString().slice(0,10);
+      modal.querySelectorAll('input[type=date]').forEach(i => { if (!i.value) i.value = today; });
+      fillCurrencies();
+      renderProviderTiles('opPlatforms', 'op_platform', 40);
+      form.reset();
+      modal.querySelectorAll('[data-drop-name]').forEach(e => e.textContent = '');
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    document.getElementById('btnAddOp').addEventListener('click', open);
+    document.getElementById('opClose').addEventListener('click', close);
+    document.getElementById('opCancel').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    // drop zone
+    modal.querySelectorAll('.b30-drop').forEach(drop => {
+      const input = drop.querySelector('input[type=file]');
+      const name  = drop.querySelector('[data-drop-name]');
+      drop.addEventListener('click', () => input.click());
+      input.addEventListener('change', () => { if (input.files[0]) name.textContent = input.files[0].name; });
+      ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+      ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
+      drop.addEventListener('drop', e => {
+        const f = e.dataTransfer.files[0];
+        if (f) { const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files; name.textContent = f.name; }
+      });
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ses = window.B30Store.getSession(); if (!ses) return;
+      const d = new FormData(form);
+      if (!d.get('op_platform') || !d.get('op_type')) {
+        return Swal.fire({ icon:'warning', title: window.B30I18n.t('op.toast.chooseType') || 'Choose platform and type' });
+      }
+      const opFile = form.querySelector('input[name=op_file]').files[0];
+      if (!opFile) {
+        return Swal.fire({ icon:'warning',
+          title: window.B30I18n.t('pairing.toast.noFile') || 'Upload required',
+          text:  window.B30I18n.t('pairing.toast.noFileBody') || 'Please attach a screenshot to continue.' });
+      }
+      if (opFile.size > 5 * 1024 * 1024) {
+        return Swal.fire({ icon:'error', title: window.B30I18n.t('pairing.toast.tooBig') || 'File too big' });
+      }
+      if (!/^image\/(png|jpe?g|webp)$/i.test(opFile.type)) {
+        return Swal.fire({ icon:'error', title: window.B30I18n.t('pairing.toast.badType') || 'Only PNG / JPG / WEBP images are allowed.' });
+      }
+      try {
+        await window.B30Store.createOperation({
+          userId: ses.id,
+          platform: d.get('op_platform'),
+          type: d.get('op_type'),
+          amount_usdt: +d.get('op_usdt'),
+          amount_fiat: +d.get('op_fiat'),
+          fiat_currency: d.get('op_currency'),
+          transaction_date: +new Date(d.get('op_date')),
+          screenshot: d.get('op_file')
+        });
+        Swal.fire({ icon:'success', timer:1400, showConfirmButton:false,
+          title: window.B30I18n.t('op.toast.submitted') || 'P2P op submitted for verification.' });
+        close();
+        await refresh();
+      } catch (err) {
+        Swal.fire({ icon:'error', title: err.message || 'Submission failed' });
+      }
+    });
+  }
+
+  // ---------------- Profile completion modal ----------------
+  function setupProfileModal() {
+    const modal = document.getElementById('profileModal');
+    const form  = document.getElementById('profileForm');
+    function open() {
+      const ses = window.B30Store.getSession();
+      if (ses) {
+        form.binance_id.value  = ses.binance_id  || '';
+        form.redotpay_id.value = ses.redotpay_id || '';
+      }
+      modal.classList.remove('hidden');
+    }
+    function close() { modal.classList.add('hidden'); }
+    document.getElementById('btnOpenProfile').addEventListener('click', open);
+    document.getElementById('profileClose').addEventListener('click', close);
+    document.getElementById('profileSkip').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ses = window.B30Store.getSession(); if (!ses) return;
+      const d = new FormData(form);
+      try {
+        await window.B30Store.updateProfile(ses.id, {
+          binance_id:  d.get('binance_id'),
+          redotpay_id: d.get('redotpay_id')
+        });
+        Swal.fire({ icon:'success', timer:1400, showConfirmButton:false,
+          title: window.B30I18n.t('profile.toast.saved') || 'Profile updated.' });
+        close();
+        await refresh();
+      } catch (err) {
+        Swal.fire({ icon:'error', title: err.message || 'Could not save profile' });
+      }
+    });
+  }
+
+  // ---------------- Profile banner logic ----------------
+  function updateProfileBanner(user) {
+    const banner = document.getElementById('profileBanner');
+    const hint   = document.getElementById('profileBannerHint');
+    if (!banner) return;
+    // Show banner if user has ANY verified op but lacks a matching ID
+    const needBin = (user.binance_ops_count  > 0) && !user.binance_id;
+    const needRed = (user.redotpay_ops_count > 0) && !user.redotpay_id;
+    const needsAny = needBin || needRed || (!user.binance_id && !user.redotpay_id && (user.total_operations || 0) > 0);
+    if (!needsAny) { banner.classList.add('hidden'); return; }
+    let msg = window.B30I18n.t('profile.banner.hint') || 'Add your Binance and/or RedotPay IDs so we can verify your operations faster.';
+    if (needBin && !needRed) msg = window.B30I18n.t('profile.banner.needBinance') || 'You completed a Binance op — please add your Binance ID so admin can verify faster.';
+    else if (needRed && !needBin) msg = window.B30I18n.t('profile.banner.needRedotpay') || 'You completed a RedotPay op — please add your RedotPay ID so admin can verify faster.';
+    hint.textContent = msg;
+    banner.classList.remove('hidden');
+  }
+
+  // Hook into refresh to also update banner
+  const _origRefresh = refresh;
+  refresh = async function () {
+    await _origRefresh();
+    try {
+      const ses = window.B30Store.getSession();
+      if (ses) {
+        const user = await window.B30Store.getUser(ses.id);
+        if (user) updateProfileBanner(user);
+      }
+    } catch (e) {}
+  };
+
+  whenReady(async (c) => {
+    if (!requireSession()) return;
+    setupPairWizard();
+    setupOpModal();
+    setupProfileModal();
+    await refresh();
+  });
+
+  document.addEventListener('b30:lang-changed', () => {
+    refresh();
+    try { renderProviderTiles('pairPlatforms','platform',48); } catch(e) {}
+    try { renderProviderTiles('opPlatforms','op_platform',40); } catch(e) {}
+  });
+  document.addEventListener('b30:providers-loaded', () => {
+    try { renderProviderTiles('pairPlatforms','platform',48); } catch(e) {}
+    try { renderProviderTiles('opPlatforms','op_platform',40); } catch(e) {}
+  });
+})();
+</script>
+</body>
+</html>

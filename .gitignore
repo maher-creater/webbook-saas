@@ -1,0 +1,33 @@
+# DB files (generated at runtime)
+backend/database/*.sqlite
+backend/database/*.sqlite-wal
+backend/database/*.sqlite-shm
+backend/database/*.sqlite-journal
+
+# Install lockfile (created by install wizard)
+backend/database/.installed
+backend/db_users/*.sqlite
+backend/db_users/*.sqlite-wal
+backend/db_users/*.sqlite-shm
+backend/db_users/*.sqlite-journal
+
+# Uploaded screenshots
+backend/uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Local env / secrets
+.env
+.env.local

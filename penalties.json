@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "description": "Penalty rules for 2030B P2P. Managed by super-admin. Loaded by admin panel + applied client-side via B30Store.adjustUserCredits().",
+  "global": {
+    "auto_apply": true,
+    "max_credits_negative": 0,
+    "notify_user": true
+  },
+  "rules": {
+    "user_fake_pairing": {
+      "label": "User submitted a fake pairing",
+      "target_type": "user",
+      "credits_penalty": 5,
+      "block_days": 7,
+      "auto_trigger_on": "transaction_status:rejected_fake",
+      "description": "Deducts 5 credits from a user whose pairing was confirmed fake by an admin."
+    },
+    "user_fake_op": {
+      "label": "User submitted a fake single op",
+      "target_type": "user",
+      "credits_penalty": 2,
+      "block_days": 3,
+      "auto_trigger_on": "transaction_status:rejected_fake",
+      "description": "Deducts 2 credits when a single P2P op is found fake."
+    },
+    "user_repeat_offender": {
+      "label": "Repeat offender (3+ rejected items)",
+      "target_type": "user",
+      "credits_penalty": 20,
+      "block_days": 30,
+      "auto_trigger_on": "repeat:3",
+      "description": "Heavy penalty for users with 3+ rejected fake submissions."
+    },
+    "admin_wrong_approve": {
+      "label": "Admin wrongly approved a fake submission",
+      "target_type": "admin",
+      "credits_penalty": 10,
+      "block_days": 0,
+      "auto_trigger_on": "manual",
+      "description": "Reputational penalty (credits-as-trust) when a sub-admin approves a fake item that is later overturned by super-admin."
+    },
+    "admin_wrong_reject": {
+      "label": "Admin wrongly rejected a legit submission",
+      "target_type": "admin",
+      "credits_penalty": 5,
+      "block_days": 0,
+      "auto_trigger_on": "manual",
+      "description": "Penalty for unjustified rejections that are later reversed by super-admin."
+    },
+    "admin_inactive": {
+      "label": "Admin inactive for too long",
+      "target_type": "admin",
+      "credits_penalty": 0,
+      "block_days": 14,
+      "auto_trigger_on": "inactivity:30d",
+      "description": "Auto-disable admins inactive for 30+ days. Super-admin can re-enable."
+    }
+  },
+  "appeal": {
+    "enabled": true,
+    "window_days": 14,
+    "max_appeals_per_user": 2
+  }
+}

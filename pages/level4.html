@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Level 4 — 2030B Internal P2P · Coming soon</title>
+<meta name="description" content="2030B's native internal P2P engine is under construction. Request invite-only early access." />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-24">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+    <div class="inline-block relative">
+      <span data-b30-level="4" data-size="120" class="inline-block"></span>
+      <span class="absolute -inset-4 rounded-full opacity-30 blur-2xl bg-gradient-to-br from-violet-500 to-rose-500 -z-10"></span>
+    </div>
+
+    <h1 class="mt-6 font-display font-extrabold text-4xl sm:text-5xl text-slate-900 dark:text-white" data-i18n="level4.title">Level 4 — 2030B internal P2P</h1>
+    <p class="mt-4 text-slate-600 dark:text-slate-400" data-i18n="level4.subtitle">Our native P2P engine is under construction. Request invite-only early access below.</p>
+
+    <div class="mt-8 flex items-center justify-center gap-3 flex-wrap">
+      <span class="b30-pill b30-pill-pending"><i data-lucide="hammer" class="w-3 h-3"></i> Under construction</span>
+      <span class="b30-pill b30-pill-verified"><i data-lucide="lock" class="w-3 h-3"></i> Invite only</span>
+    </div>
+
+    <form id="lvl4Form" class="b30-card mt-10 p-6 sm:p-8 text-left space-y-3">
+      <label class="block">
+        <span class="text-sm font-medium">Full name</span>
+        <input class="b30-input mt-1" name="full_name" required placeholder="Your name">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Email</span>
+        <input class="b30-input mt-1" name="email" type="email" required placeholder="you@2030b.com">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Why do you need internal P2P?</span>
+        <textarea class="b30-input mt-1" name="reason" rows="3" placeholder="Tell us about your trading volume and country."></textarea>
+      </label>
+      <button class="wb-btn-primary rounded-lg px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2" data-i18n="level4.request">
+        Request early access
+      </button>
+    </form>
+
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+document.getElementById('lvl4Form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  const list = JSON.parse(localStorage.getItem('b30-lvl4-waitlist') || '[]');
+  list.push(Object.assign({ at: Date.now() }, data));
+  localStorage.setItem('b30-lvl4-waitlist', JSON.stringify(list));
+  Swal.fire({
+    icon: 'success',
+    title: window.B30I18n.t('level4.toast.queued') || "You're on the list."
+  });
+  e.target.reset();
+});
+</script>
+</body>
+</html>

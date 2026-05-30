@@ -1,0 +1,247 @@
+{
+    "platform": {
+        "name": "2030B P2P Pairing",
+        "version": "2.0",
+        "support_email": "support@2030b.com"
+    },
+    "levels": {
+        "1": {
+            "required_operations": 1,
+            "required_pairings": 0,
+            "unlocks": "basic_membership",
+            "title": "Member",
+            "description": "Submit your first verified P2P operation (just a buy OR a sell) on either platform. After it's verified we'll recommend filling in the matching Binance / RedotPay ID on your profile."
+        },
+        "2": {
+            "required_redotpay_operations": 3,
+            "required_redotpay_pairings": 1,
+            "unlocks": "redotpay_buy_access",
+            "title": "RedotPay Trader",
+            "description": "Complete 3 RedotPay operations and 1 RedotPay pairing to unlock RedotPay-assisted buying."
+        },
+        "3": {
+            "required_binance_operations": 20,
+            "required_binance_pairings": 1,
+            "unlocks": "binance_buy_access",
+            "title": "Binance Trader",
+            "description": "Complete 20 Binance operations and 1 Binance pairing to unlock Binance-assisted buying."
+        },
+        "4": {
+            "required_pairings": 100,
+            "unlocks": "internal_p2p_coming_soon",
+            "title": "Founder · Internal P2P",
+            "description": "Coming soon — invite-only access to 2030B's native internal P2P engine."
+        }
+    },
+    "fees": {
+        "buy_fee_percent": 3,
+        "sell_fee_percent": 0
+    },
+    "profit_percent": 10,
+    "credits_per_pairing": 1,
+    "credits_per_single_op": 0.5,
+    "default_fiat_currency": "TND",
+    "supported_fiat_currencies": [
+        "TND",
+        "USD",
+        "EUR",
+        "GBP",
+        "CAD",
+        "AUD",
+        "JPY",
+        "CNY",
+        "INR",
+        "BRL",
+        "ZAR",
+        "NGN"
+    ],
+    "exchange_rate_api": "https://api.exchangerate-api.com/v4/latest/",
+    "min_sell_amount_redotpay_usdt": 50,
+    "min_sell_amount_binance_usdt": 100,
+    "supported_languages": [
+        "en",
+        "ar",
+        "fr",
+        "es",
+        "de",
+        "pt",
+        "it",
+        "zh",
+        "hi",
+        "ja",
+        "ru",
+        "tr"
+    ],
+    "affiliate": {
+        "binance": "https://accounts.binance.com/register?ref=2030BMAHER",
+        "redotpay": "https://url.hk/i/en/2030BMAHER"
+    },
+    "screenshot_upload": {
+        "max_size_mb": 5,
+        "allowed_mime": [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ]
+    },
+    "profile": {
+        "binance_id_required_after_first_binance_op": true,
+        "redotpay_id_required_after_first_redotpay_op": true,
+        "binance_id_label": "Binance ID (UID)",
+        "redotpay_id_label": "RedotPay ID",
+        "binance_id_regex": "^[0-9]{6,20}$",
+        "redotpay_id_regex": "^[A-Za-z0-9_\\-]{4,32}$"
+    },
+    "auth": {
+        "enable_email_verification": true,
+        "enable_social": true,
+        "social_providers": [
+            "google",
+            "github",
+            "x",
+            "facebook"
+        ],
+        "popup_origin_whitelist": [
+            "*"
+        ],
+        "session_minutes": 30,
+        "rate_limit_per_minute": 10,
+        "min_password_length": 8
+    },
+    "ecosystem_currencies_file": "ecosystem-currencies.json",
+    "p2p_providers_file": "p2p-providers.json",
+    "penalties_file": "penalties.json",
+    "security_file": "security.json",
+    "affiliate_program": {
+        "enabled": true,
+        "percent": 10,
+        "max_credits_per_referee_per_year": 0,
+        "reward_event": "on_verified",
+        "share_text": "Join 2030B P2P with my link — turn your real trades into ecosystem credits.",
+        "ref_query_param": "ref",
+        "cookie_days": 30
+    },
+    "solutions_menu": {
+        "enabled": true,
+        "show_dimension": true,
+        "show_currency": true,
+        "show_rate": true
+    },
+    "countries": [
+        {
+            "code": "TN",
+            "name": "Tunisia",
+            "currency": "TND"
+        },
+        {
+            "code": "US",
+            "name": "United States",
+            "currency": "USD"
+        },
+        {
+            "code": "GB",
+            "name": "United Kingdom",
+            "currency": "GBP"
+        },
+        {
+            "code": "FR",
+            "name": "France",
+            "currency": "EUR"
+        },
+        {
+            "code": "DE",
+            "name": "Germany",
+            "currency": "EUR"
+        },
+        {
+            "code": "ES",
+            "name": "Spain",
+            "currency": "EUR"
+        },
+        {
+            "code": "IT",
+            "name": "Italy",
+            "currency": "EUR"
+        },
+        {
+            "code": "PT",
+            "name": "Portugal",
+            "currency": "EUR"
+        },
+        {
+            "code": "CA",
+            "name": "Canada",
+            "currency": "CAD"
+        },
+        {
+            "code": "AU",
+            "name": "Australia",
+            "currency": "AUD"
+        },
+        {
+            "code": "JP",
+            "name": "Japan",
+            "currency": "JPY"
+        },
+        {
+            "code": "CN",
+            "name": "China",
+            "currency": "CNY"
+        },
+        {
+            "code": "IN",
+            "name": "India",
+            "currency": "INR"
+        },
+        {
+            "code": "BR",
+            "name": "Brazil",
+            "currency": "BRL"
+        },
+        {
+            "code": "ZA",
+            "name": "South Africa",
+            "currency": "ZAR"
+        },
+        {
+            "code": "NG",
+            "name": "Nigeria",
+            "currency": "NGN"
+        },
+        {
+            "code": "AE",
+            "name": "UAE",
+            "currency": "USD"
+        },
+        {
+            "code": "SA",
+            "name": "Saudi Arabia",
+            "currency": "USD"
+        },
+        {
+            "code": "EG",
+            "name": "Egypt",
+            "currency": "USD"
+        },
+        {
+            "code": "MA",
+            "name": "Morocco",
+            "currency": "EUR"
+        },
+        {
+            "code": "DZ",
+            "name": "Algeria",
+            "currency": "EUR"
+        },
+        {
+            "code": "TR",
+            "name": "Turkey",
+            "currency": "USD"
+        },
+        {
+            "code": "RU",
+            "name": "Russia",
+            "currency": "USD"
+        }
+    ]
+}

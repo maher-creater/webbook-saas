@@ -1,0 +1,136 @@
+# 2030B P2P Pairing — Root .htaccess
+#
+# Routes top-level requests to the PHP backend when present, otherwise
+# falls back to the static HTML files (useful for the JS-only demo).
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # If PHP backend is installed, prefer it for dynamic routes.
+  RewriteCond %{DOCUMENT_ROOT}/backend/api.php -f
+  RewriteRule ^api/(.*)$       backend/api.php?op=$1 [L,QSA]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/dashboard.php -f
+  RewriteRule ^dashboard/?$    backend/dashboard.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/docs.php -f
+  RewriteRule ^docs/?$         backend/docs.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/admin.php -f
+  RewriteRule ^admin/?$        backend/admin.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/level4.php -f
+  RewriteRule ^level4/?$       backend/level4.php [L]
+
+  RewriteCond %{DOCUMENT_ROOT}/backend/index.php -f
+  RewriteRule ^/?$             backend/index.php [L]
+
+  # Block direct access to backend internals
+  RewriteRule ^backend/(inc|sql|database|db_users|uploads)/ - [F,L]
+
+  # Block dotfiles and VCS folders
+  RewriteRule (^|/)\.(git|env|htpasswd|DS_Store) - [F,L]
+</IfModule>
+
+# ─── PUBLIC JSON CONFIG FILES ────────────────────────────────────────────────
+# The SPA loads these from the browser (config.json, p2p-providers.json,
+# security.json, penalties.json, ecosystem-currencies.json). They MUST stay
+# readable. All sensitive fields (passwords, super-admin email) live in
+# secrets.json which is BLOCKED below.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Deny access to truly sensitive files only
+<FilesMatch "\.(sqlite|sqlite-journal|sqlite3|sql|log|env|ini|bak|swp)$">
+  Require all denied
+</FilesMatch>
+<Files "secrets.json">
+  Require all denied
+</Files>
+<Files "composer.json">
+  Require all denied
+</Files>
+<Files "composer.lock">
+  Require all denied
+</Files>
+<FilesMatch "\.(md|markdown)$">
+  Require all denied
+</FilesMatch>
+
+# Make the public JSON config files explicitly readable & served as JSON
+<FilesMatch "^(config|p2p-providers|security|penalties|ecosystem-currencies)\.json$">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  Header set Content-Type "application/json; charset=utf-8"
+  Header set Cache-Control "public, max-age=300"
+</FilesMatch>
+
+Options -Indexes -MultiViews
+ServerSignature Off
+
+# Force UTF-8
+AddDefaultCharset UTF-8
+
+# Security headers
+<IfModule mod_headers.c>
+  # Disable MIME-sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Clickjacking protection
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Referrer policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Permissions policy (deny risky features by default)
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()"
+
+  # XSS protection (legacy, but harmless)
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # HSTS (only effective over HTTPS — safe to send always)
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+  # Cross-Origin isolation hints
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-site"
+
+  # Content Security Policy
+  # NOTE: this is a JS-heavy SPA hosted via static files + Tailwind/SweetAlert/
+  # Lucide CDNs. We allow connect-src for unpkg/jsdelivr so the browsers that
+  # fetch sourcemaps don't throw CSP warnings.
+  # 'unsafe-inline' kept for inline event handlers used in the demo UI.
+  Header always set Content-Security-Policy "default-src 'self'; \
+script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://unpkg.com; \
+style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; \
+font-src 'self' https://fonts.gstatic.com data:; \
+img-src 'self' data: blob: https:; \
+connect-src 'self' https://2030b.com https://*.2030b.com https://unpkg.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.googleapis.com https://fonts.gstatic.com; \
+worker-src 'self' blob:; \
+frame-ancestors 'self'; \
+base-uri 'self'; \
+form-action 'self'; \
+object-src 'none'"
+
+  # Remove server / PHP version banner where possible
+  Header unset X-Powered-By
+  Header unset Server
+</IfModule>
+
+# Cache static assets
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/png     "access plus 7 days"
+  ExpiresByType image/jpeg    "access plus 7 days"
+  ExpiresByType image/webp    "access plus 7 days"
+  ExpiresByType text/css      "access plus 1 day"
+  ExpiresByType application/javascript "access plus 1 day"
+  ExpiresByType application/json "access plus 5 minutes"
+  ExpiresByType text/html     "access plus 0 seconds"
+</IfModule>
+
+# Gzip / deflate
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json image/svg+xml
+</IfModule>

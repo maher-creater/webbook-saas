@@ -1,13 +1,13 @@
-/* WebBook SaaS — Shared interactivity */
+/* 2030B P2P Pairing — Shared interactivity (theme, reveal, mobile menu, counters) */
 (function () {
   const root = document.documentElement;
-  const stored = localStorage.getItem('wb-theme');
+  const stored = localStorage.getItem('b30-theme') || localStorage.getItem('wb-theme');
   const initial = stored || 'dark';
   if (initial === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
 
   function setTheme(mode) {
     if (mode === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
-    localStorage.setItem('wb-theme', mode);
+    localStorage.setItem('b30-theme', mode);
     document.querySelectorAll('[data-theme-icon]').forEach(el => {
       el.dataset.themeIcon === 'sun'
         ? el.classList.toggle('hidden', mode !== 'dark')
@@ -15,17 +15,25 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', wireUp);
+  document.addEventListener('shell:rendered', () => setTimeout(wireUp, 30));
+
+  function wireUp() {
+    // Theme
     setTheme(root.classList.contains('dark') ? 'dark' : 'light');
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+      if (btn.dataset.themeWired) return;
+      btn.dataset.themeWired = '1';
       btn.addEventListener('click', () => setTheme(root.classList.contains('dark') ? 'light' : 'dark'));
     });
 
     // Mobile menu
     document.querySelectorAll('[data-mobile-toggle]').forEach(btn => {
+      if (btn.dataset.mobileWired) return;
+      btn.dataset.mobileWired = '1';
       btn.addEventListener('click', () => {
-        const target = document.getElementById('mobileMenu');
-        if (target) target.classList.toggle('hidden');
+        const t = document.getElementById('mobileMenu');
+        if (t) t.classList.toggle('hidden');
       });
     });
     document.addEventListener('click', (e) => {
@@ -33,88 +41,50 @@
       if (a) document.getElementById('mobileMenu')?.classList.add('hidden');
     });
 
-    // FAQ accordion
-    document.querySelectorAll('[data-faq]').forEach(item => {
-      const btn = item.querySelector('[data-faq-btn]');
-      const panel = item.querySelector('[data-faq-panel]');
-      const icon = item.querySelector('[data-faq-icon]');
-      if (!btn || !panel) return;
-      btn.addEventListener('click', () => {
-        const open = !panel.classList.contains('hidden');
-        document.querySelectorAll('[data-faq-panel]').forEach(p => p.classList.add('hidden'));
-        document.querySelectorAll('[data-faq-icon]').forEach(i => i.classList.remove('rotate-45'));
-        if (!open) { panel.classList.remove('hidden'); icon && icon.classList.add('rotate-45'); }
-      });
-    });
-
     // Reveal on scroll
-    const rvIO = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rv-in'); rvIO.unobserve(e.target); } });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-    document.querySelectorAll('[data-rv]').forEach(el => rvIO.observe(el));
-
-    // Animated section blocks
-    const wbIO = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); wbIO.unobserve(e.target); } });
-    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-    document.querySelectorAll('[data-wb-anim]').forEach(el => wbIO.observe(el));
-
-    // Tabs
-    document.querySelectorAll('[data-tabs]').forEach(group => {
-      const tabs = group.querySelectorAll('[data-tab]');
-      const panels = group.querySelectorAll('[data-tab-panel]');
-      tabs.forEach(t => t.addEventListener('click', () => {
-        const k = t.dataset.tab;
-        tabs.forEach(x => x.classList.toggle('is-active', x === t));
-        panels.forEach(p => p.classList.toggle('hidden', p.dataset.tabPanel !== k));
-      }));
-    });
+    if (!window.__b30RvBound) {
+      window.__b30RvBound = true;
+      const rvIO = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rv-in'); rvIO.unobserve(e.target); } });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('[data-rv]').forEach(el => rvIO.observe(el));
+    }
 
     // Counters
-    const counters = document.querySelectorAll('[data-counter]');
-    if (counters.length) {
-      const cio = new IntersectionObserver(entries => {
-        entries.forEach(en => {
-          if (!en.isIntersecting) return;
-          const el = en.target;
-          const target = parseFloat(el.dataset.counter);
-          const decimals = parseInt(el.dataset.decimals || '0', 10);
-          const suffix = el.dataset.suffix || '';
-          let cur = 0;
-          const step = target / 60;
-          const t = setInterval(() => {
-            cur += step;
-            if (cur >= target) { cur = target; clearInterval(t); }
-            el.textContent = cur.toFixed(decimals) + suffix;
-          }, 16);
-          cio.unobserve(el);
-        });
-      }, { threshold: 0.4 });
-      counters.forEach(c => cio.observe(c));
+    if (!window.__b30CountBound) {
+      window.__b30CountBound = true;
+      const counters = document.querySelectorAll('[data-counter]');
+      if (counters.length) {
+        const cio = new IntersectionObserver(entries => {
+          entries.forEach(en => {
+            if (!en.isIntersecting) return;
+            const el = en.target;
+            const target = parseFloat(el.dataset.counter);
+            const decimals = parseInt(el.dataset.decimals || '0', 10);
+            const suffix = el.dataset.suffix || '';
+            let cur = 0;
+            const step = target / 60;
+            const t = setInterval(() => {
+              cur += step;
+              if (cur >= target) { cur = target; clearInterval(t); }
+              el.textContent = cur.toFixed(decimals) + suffix;
+            }, 16);
+            cio.unobserve(el);
+          });
+        }, { threshold: 0.4 });
+        counters.forEach(c => cio.observe(c));
+      }
     }
+    if (window.lucide) try { lucide.createIcons(); } catch (e) {}
+  }
 
-    // Reading progress bar (if requested via [data-progress])
-    if (document.querySelector('[data-progress]')) {
-      const bar = document.createElement('div');
-      bar.id = 'wb-progress';
-      document.body.appendChild(bar);
-      window.addEventListener('scroll', () => {
-        const h = document.documentElement;
-        const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
-        bar.style.width = pct + '%';
-      });
-    }
-
-    // Pricing toggle
-    const pricingToggle = document.getElementById('pricingToggle');
-    if (pricingToggle) {
-      pricingToggle.addEventListener('change', e => {
-        const yearly = e.target.checked;
-        document.querySelectorAll('[data-price-monthly]').forEach(el => el.classList.toggle('hidden', yearly));
-        document.querySelectorAll('[data-price-yearly]').forEach(el => el.classList.toggle('hidden', !yearly));
-      });
-    }
-
-    if (window.lucide) lucide.createIcons();
+  // Apply admin's locally-saved config override before B30Config loads
+  document.addEventListener('DOMContentLoaded', () => {
+    const stored = localStorage.getItem('b30-config-override');
+    if (!stored || !window.B30Config) return;
+    try {
+      const parsed = JSON.parse(stored);
+      window.B30Config.onLoad((c) => Object.assign(c, parsed));
+    } catch (e) {}
   });
 })();

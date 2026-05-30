@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Super-Admin Manual · 2030B P2P Pairing</title>
+<meta name="description" content="Full super-admin documentation: providers, security, sub-admins, penalties, ecosystem." />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../../css/style.css">
+
+<script src="../../js/logos.js"></script>
+<script src="../../js/config.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/store.js"></script>
+<script src="../../js/shell.js" defer></script>
+<script src="../../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body data-prefix="../../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[260px_1fr] gap-8">
+
+    <aside class="lg:sticky lg:top-28 self-start">
+      <div class="b30-card">
+        <p class="text-[10px] uppercase tracking-widest opacity-60" data-i18n="docs.section">Documentation</p>
+        <h2 class="font-display font-bold text-lg mb-2" data-i18n="docs.superadmin.title">Super-Admin</h2>
+        <ul class="space-y-1 text-sm">
+          <li><a class="hover:text-blue-500 block py-1" href="#overview" data-i18n="docs.sa.toc.overview">Overview</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#first-run" data-i18n="docs.sa.toc.firstRun">First run &amp; password</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#admins" data-i18n="docs.sa.toc.admins">Manage sub-admins</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#perms" data-i18n="docs.sa.toc.perms">Permissions reference</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#providers" data-i18n="docs.sa.toc.providers">P2P providers</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#security" data-i18n="docs.sa.toc.security">Security policy</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#penalties" data-i18n="docs.sa.toc.penalties">Penalties</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#ecosystem" data-i18n="docs.sa.toc.ecosystem">Ecosystem currencies</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#audit" data-i18n="docs.sa.toc.audit">Audit log</a></li>
+        </ul>
+        <div class="mt-4 border-t border-slate-200/40 dark:border-white/10 pt-3 text-xs">
+          <p class="opacity-60 mb-2" data-i18n="docs.otherRoles">Other roles</p>
+          <a href="admin.html"     class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.admin">Sub-admin manual</a>
+          <a href="affiliate.html" class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.affiliate">Affiliate program</a>
+          <a href="user.html"      class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.user">User guide</a>
+          <a href="api.html"       class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.api">Auth API</a>
+        </div>
+      </div>
+    </aside>
+
+    <article class="space-y-10 leading-relaxed">
+
+      <header>
+        <span class="wb-chip"><i data-lucide="shield-check" class="w-3 h-3 inline"></i> <span data-i18n="docs.sa.chip">Super-Admin only</span></span>
+        <h1 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="docs.sa.h1">Super-Admin manual</h1>
+        <p class="mt-2 opacity-80 max-w-3xl" data-i18n="docs.sa.lead">You are the root of the trust tree. You configure providers, security, penalties, and create sub-admins with scoped permissions. Every action is auditable.</p>
+      </header>
+
+      <section id="overview" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.overview.h">Overview</h2>
+        <p class="mt-2" data-i18n="docs.sa.overview.p1">A super-admin can do everything: enable/disable P2P providers, edit the security policy, create or revoke sub-admins, issue penalties, and rewrite system config. Sub-admins receive a permission allow-list and cannot create other admins.</p>
+        <ul class="list-disc pl-5 mt-3 text-sm space-y-1">
+          <li data-i18n="docs.sa.overview.b1">All write actions are logged to <code>audit_log</code>.</li>
+          <li data-i18n="docs.sa.overview.b2">All configuration is stored in versioned JSON files: <code>config.json</code>, <code>p2p-providers.json</code>, <code>security.json</code>, <code>penalties.json</code>, <code>ecosystem-currencies.json</code>.</li>
+          <li data-i18n="docs.sa.overview.b3">All passwords are bcrypt-hashed (cost is set in <code>security.json &gt; auth.bcrypt_cost</code>).</li>
+        </ul>
+      </section>
+
+      <section id="first-run" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.first.h">First run &amp; password</h2>
+        <p class="mt-2" data-i18n="docs.sa.first.p1">On the first request to any backend page, <code>b30_ensure_super_admin()</code> reads <code>config.json &gt; super_admin</code> and creates the super-admin row in <code>admins</code> if none exists.</p>
+        <pre class="rounded-lg bg-slate-900 text-slate-100 text-xs p-4 mt-3 overflow-x-auto"><code>{
+  "super_admin": {
+    "email":     "superadmin@2030b.local",
+    "password":  "change-me-now",
+    "full_name": "2030B Super Admin"
+  }
+}</code></pre>
+        <p class="mt-3 text-sm" data-i18n="docs.sa.first.p2">After first sign-in, change the password from the <strong>Admins</strong> tab. The original <code>super_admin.password</code> in JSON is only used for seeding — the live bcrypt hash lives in the SQLite <code>admins</code> table.</p>
+      </section>
+
+      <section id="admins" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.admins.h">Manage sub-admins</h2>
+        <p class="mt-2" data-i18n="docs.sa.admins.p1">Open the <strong>Admins</strong> tab → <em>New sub-admin</em>. Provide email, full name, password, and check the permissions you want to grant.</p>
+        <ol class="list-decimal pl-5 mt-3 text-sm space-y-1">
+          <li data-i18n="docs.sa.admins.s1">Pick a strong password (at least <code>security.json &gt; auth.password_min_length</code> chars).</li>
+          <li data-i18n="docs.sa.admins.s2">Grant only the permissions they need (least-privilege).</li>
+          <li data-i18n="docs.sa.admins.s3">Use the toggle to disable a leaver — preserves audit trail.</li>
+          <li data-i18n="docs.sa.admins.s4">Deleting an admin is permanent but does not delete their audit log entries.</li>
+        </ol>
+      </section>
+
+      <section id="perms" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.perms.h">Permissions reference</h2>
+        <p class="mt-2 text-sm opacity-80" data-i18n="docs.sa.perms.p1">Each tab in <code>/pages/admin.php</code> is gated by exactly one permission.</p>
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase opacity-70"><tr><th class="text-left p-2">Permission</th><th class="text-left p-2">Grants</th></tr></thead>
+            <tbody class="font-mono text-xs">
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">verify_transactions</td><td class="p-2">Approve/reject pending pairings &amp; ops</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">manage_users</td><td class="p-2">List, enable/disable users; issue penalties</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">manage_admins</td><td class="p-2">CRUD sub-admins (super-admin only effectively)</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">manage_affiliate</td><td class="p-2">View affiliate KPIs &amp; reward ledger</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">manage_keys</td><td class="p-2">Revoke / inspect Auth API keys</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">manage_ecosystem</td><td class="p-2">Edit ecosystem rates &amp; providers</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">edit_config</td><td class="p-2">Edit raw <code>config.json</code> &amp; security policy</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="providers" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.prov.h">P2P providers</h2>
+        <p class="mt-2" data-i18n="docs.sa.prov.p1">The whole platform is provider-agnostic. Open the <strong>P2P providers</strong> tab to enable a new exchange — every system page (wizard, op modal, admin lists, dashboards, docs) re-renders automatically.</p>
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.sa.prov.fields">Per-provider fields</h3>
+        <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+          <li><code>code</code> — short ID (lowercase). Used as <code>platform</code> in DB rows.</li>
+          <li><code>enabled</code> — boolean. Disabled providers stay in the DB but vanish from UI.</li>
+          <li><code>name_{lang}</code> — translated name (12 languages).</li>
+          <li><code>color_primary / color_accent</code> — used by the logo renderer.</li>
+          <li><code>min_usdt_buy / min_usdt_sell / max_usdt_per_op</code> — enforced server-side.</li>
+          <li><code>level_required</code> — minimum user level allowed to use this provider.</li>
+          <li><code>fee_buy_percent / fee_sell_percent</code> — added/subtracted from credit math.</li>
+          <li><code>supported_fiat</code> — array of ISO-4217 codes.</li>
+          <li><code>uid_label_{lang} / uid_regex / uid_hint_en</code> — UI for capturing the user's exchange UID.</li>
+        </ul>
+        <p class="mt-3 text-sm opacity-80" data-i18n="docs.sa.prov.save">Click <strong>Save providers</strong> after editing. The change persists locally first (so you can preview), then is written to <code>p2p-providers.json</code> by the PHP backend (POST <code>?op=admin.providers.save</code>).</p>
+      </section>
+
+      <section id="security" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.sec.h">Security policy</h2>
+        <p class="mt-2" data-i18n="docs.sa.sec.p1">The <strong>Security</strong> tab edits <code>security.json</code>. Each block is enforced both client-side (UX warnings, file size, etc.) and server-side (PHP bootstrap reads the same file).</p>
+        <div class="grid md:grid-cols-2 gap-3 mt-3 text-sm">
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>auth</strong> — bcrypt cost, password min length, 2FA, session TTL.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>rate_limits</strong> — per-minute caps for signin/signup/admin/api.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>csrf / cors / csp</strong> — request hardening &amp; cross-origin.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>upload</strong> — MIME allow-list, max size, EXIF strip, p-hash dup check.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>ip_policy</strong> — block Tor, warn VPN, country block/allow.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>fraud_detection</strong> — duplicate screenshot, max ops/day, strikes.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>audit</strong> — what to log, retention days.</div>
+          <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3"><strong>data_privacy</strong> — GDPR export / delete / anonymize.</div>
+        </div>
+      </section>
+
+      <section id="penalties" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.pen.h">Penalties</h2>
+        <p class="mt-2" data-i18n="docs.sa.pen.p1">Rules live in <code>penalties.json</code>. Each rule has a code, severity, default <code>credits_delta</code>, and an optional appeal window. Issued penalties are stored in the <code>penalties</code> table and (if negative) automatically debit the user's credits.</p>
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.sa.pen.flow">Workflow</h3>
+        <ol class="list-decimal pl-5 mt-2 text-sm space-y-1">
+          <li data-i18n="docs.sa.pen.f1">Admin sees a fake pairing → opens <strong>Penalties</strong> tab → <em>New penalty</em>.</li>
+          <li data-i18n="docs.sa.pen.f2">Pick the rule (autofills severity + credits_delta).</li>
+          <li data-i18n="docs.sa.pen.f3">Add evidence (tx_id, pairing_id) and a reason.</li>
+          <li data-i18n="docs.sa.pen.f4">User can appeal — status becomes <code>appealed</code>; a super-admin can <em>Revert</em> to refund credits.</li>
+        </ol>
+      </section>
+
+      <section id="ecosystem" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.eco.h">Ecosystem currencies</h2>
+        <p class="mt-2" data-i18n="docs.sa.eco.p1">Each project (e.g. CTC, GTC, …) has a credit-to-currency rate. Edit rates from the <strong>Ecosystem</strong> tab. A user's <code>total_credits</code> can be redeemed against any project's currency at the current rate.</p>
+      </section>
+
+      <section id="audit" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.sa.audit.h">Audit log</h2>
+        <p class="mt-2" data-i18n="docs.sa.audit.p1">Every privileged action writes a row to <code>audit_log</code> with actor, action, target, notes, and timestamp. Retrieve the latest via <code>GET ?op=admin.audit&amp;limit=100</code>. Retention is configured in <code>security.json &gt; audit.retention_days</code>.</p>
+      </section>
+
+    </article>
+  </div>
+</main>
+
+<div data-shell-foot></div>
+</body>
+</html>

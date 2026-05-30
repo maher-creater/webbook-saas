@@ -1,0 +1,41 @@
+# 2030B P2P Pairing — Apache rewrite rules (backend)
+#
+# Maps clean URLs to PHP entry points and protects the SQLite databases
+# and uploaded screenshots from direct HTTP access.
+
+# Enable rewrite engine
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # /dashboard      -> /backend/dashboard.php
+  # /docs           -> /backend/docs.php
+  # /admin          -> /backend/admin.php
+  # /level4         -> /backend/level4.php
+  # /api/<op>       -> /backend/api.php?op=<op>
+  RewriteRule ^api/(.*)$       api.php?op=$1 [L,QSA]
+  RewriteRule ^dashboard/?$    dashboard.php [L]
+  RewriteRule ^docs/?$         docs.php      [L]
+  RewriteRule ^admin/?$        admin.php     [L]
+  RewriteRule ^level4/?$       level4.php    [L]
+</IfModule>
+
+# Hide every .sqlite, .sql and .log from the public.
+<FilesMatch "\.(sqlite|sqlite-journal|sql|log)$">
+  Require all denied
+</FilesMatch>
+
+# Protect db_users/, database/, sql/, inc/ entirely.
+<IfModule mod_rewrite.c>
+  RewriteRule ^(database|db_users|sql|inc)/ - [F,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes

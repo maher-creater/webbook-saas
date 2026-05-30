@@ -1,0 +1,14 @@
+# Only allow direct fetches of image files; deny everything else.
+<FilesMatch "\.(php|phtml|phar|sh|sql|sqlite|log|htaccess)$">
+  Require all denied
+</FilesMatch>
+
+# Force images to be served as static (no PHP execution)
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+
+Options -ExecCGI -Indexes
+AddType image/jpeg .jpg .jpeg
+AddType image/png .png
+AddType image/webp .webp
