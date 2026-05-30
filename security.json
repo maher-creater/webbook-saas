@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "description": "Security policy for 2030B P2P. Managed by super-admin via /pages/admin.html \u2192 Security tab. Server enforces via /backend/api/*.php.",
+  "auth": {
+    "password_min_length": 8,
+    "password_require_upper": true,
+    "password_require_digit": true,
+    "password_require_symbol": false,
+    "bcrypt_cost": 12,
+    "session_ttl_seconds": 86400,
+    "session_idle_seconds": 3600,
+    "session_renew_on_use": true,
+    "max_concurrent_sessions": 3,
+    "remember_me_days": 30,
+    "email_verification_required": true,
+    "twofa_enabled_for_admins": true,
+    "twofa_enabled_for_users": false,
+    "twofa_method": "totp",
+    "api_key_required": true,
+    "api_key_header": "X-API-Key",
+    "api_key_default_label": "system_default"
+  },
+  "rate_limits": {
+    "signin": {
+      "per_ip_per_minute": 6,
+      "per_email_per_minute": 4,
+      "lockout_seconds": 60
+    },
+    "signup": {
+      "per_ip_per_minute": 4,
+      "lockout_seconds": 120
+    },
+    "admin_signin": {
+      "per_ip_per_minute": 4,
+      "lockout_seconds": 300
+    },
+    "verify_email": {
+      "per_user_per_minute": 4
+    },
+    "forgot_password": {
+      "per_ip_per_hour": 6
+    },
+    "api_default": {
+      "per_key_per_minute": 60
+    }
+  },
+  "csrf": {
+    "enabled": true,
+    "cookie_name": "b30_csrf",
+    "header_name": "X-B30-CSRF",
+    "ttl_seconds": 7200,
+    "samesite": "Lax"
+  },
+  "cors": {
+    "allowed_origins": [
+      "*"
+    ],
+    "allow_credentials": false,
+    "max_age_seconds": 86400
+  },
+  "csp": {
+    "enabled": true,
+    "default_src": "'self'",
+    "script_src": "'self' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net 'unsafe-inline'",
+    "style_src": "'self' https://fonts.googleapis.com https://cdn.jsdelivr.net 'unsafe-inline'",
+    "font_src": "'self' https://fonts.gstatic.com data:",
+    "img_src": "'self' data: blob: https:",
+    "connect_src": "'self' https:",
+    "frame_ancestors": "'self'",
+    "report_uri": ""
+  },
+  "upload": {
+    "allowed_mime": [
+      "image/png",
+      "image/jpeg",
+      "image/webp"
+    ],
+    "max_size_bytes": 5242880,
+    "scan_exif": true,
+    "strip_exif": true,
+    "store_path": "/backend/storage/screenshots",
+    "perceptual_hash_check": true,
+    "reject_duplicates_per_user": true
+  },
+  "ip_policy": {
+    "country_block": [],
+    "country_allow_only": [],
+    "tor_block": false,
+    "vpn_warn": true,
+    "blocked_ips": [],
+    "allowed_admin_ips": []
+  },
+  "fraud_detection": {
+    "duplicate_screenshot_check": true,
+    "same_amount_window_minutes": 60,
+    "max_pairings_per_day_per_user": 25,
+    "max_ops_per_day_per_user": 100,
+    "suspicious_review_required": true,
+    "auto_reject_after_n_strikes": 5
+  },
+  "headers": {
+    "x_frame_options": "SAMEORIGIN",
+    "x_content_type_options": "nosniff",
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "permissions_policy": "camera=(), microphone=(), geolocation=()",
+    "strict_transport_security": "max-age=31536000; includeSubDomains"
+  },
+  "audit": {
+    "log_admin_actions": true,
+    "log_user_logins": true,
+    "log_failed_attempts": true,
+    "log_uploads": true,
+    "retention_days": 365
+  },
+  "data_privacy": {
+    "gdpr_enabled": true,
+    "data_export_endpoint": "/backend/api/me/export.php",
+    "data_delete_endpoint": "/backend/api/me/delete.php",
+    "anonymize_after_delete": true
+  }
+}

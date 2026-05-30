@@ -99,11 +99,45 @@
       <div id="dashProgress" class="grid sm:grid-cols-2 gap-4"></div>
     </div>
 
-    <!-- Recent pairings -->
-    <div class="mt-8" data-rv data-rv-delay="2">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-display font-bold text-xl" data-i18n="dash.recentPairings">Recent pairings</h2>
-        <span class="text-xs opacity-70" id="pairingsCount">0</span>
+    <!-- Credits-are-keys banner -->
+    <div class="b30-key-hint mt-8" data-rv data-rv-delay="1">
+      <i data-lucide="key-round" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
+      <span data-i18n="dash.creditsKeys">Your B30C credits are the keys to every premium feature in the 2030B ecosystem.</span>
+    </div>
+
+    <!-- Affiliate quick widget -->
+    <div class="b30-card mt-6 flex flex-wrap items-center justify-between gap-4" id="affiliateWidget" data-rv data-rv-delay="2">
+      <div class="flex items-center gap-3">
+        <span class="rounded-full bg-blue-500/15 text-blue-500 w-10 h-10 inline-flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5"></i></span>
+        <div>
+          <p class="font-display font-bold" data-i18n="affiliate.short.title">Your affiliate link</p>
+          <p class="text-xs opacity-70" id="affiliateSub" data-i18n="affiliate.short.sub">Share to earn extra credits on every verified pairing.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <code id="affiliateCode" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-xs font-mono">—</code>
+        <button id="btnCopyRef" class="wb-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span data-i18n="affiliate.copy">Copy link</span>
+        </button>
+        <a href="affiliate.html" class="wb-btn-primary rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5">
+          <span data-i18n="affiliate.open">Open</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent activity (pairings + single ops) -->
+    <div class="mt-8" data-rv data-rv-delay="3">
+      <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h2 class="font-display font-bold text-xl" data-i18n="dash.recentActivity">Recent activity</h2>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1 text-xs">
+            <button data-act-filter="all"      class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10 is-active" data-i18n="filter.all">All</button>
+            <button data-act-filter="pending"  class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.pending">Pending</button>
+            <button data-act-filter="verified" class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.verified">Verified</button>
+            <button data-act-filter="rejected" class="px-2.5 py-1 rounded-full border border-slate-300/50 dark:border-white/10 hover:bg-blue-500/10" data-i18n="status.rejected">Rejected</button>
+          </div>
+          <span class="text-xs opacity-70" id="pairingsCount">0</span>
+        </div>
       </div>
       <div id="pairingsList" class="space-y-3">
         <!-- populated -->
@@ -140,22 +174,11 @@
     </div>
 
     <form id="pairForm" class="mt-6" novalidate>
-      <!-- Step 1: platform -->
+      <!-- Step 1: platform (populated dynamically from p2p-providers.json) -->
       <div data-pair-step="1">
-        <p class="text-sm opacity-70 mb-3">Choose the platform where you executed this pairing.</p>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="b30-card b30-tile cursor-pointer text-center p-5">
-            <input type="radio" name="platform" value="binance" class="sr-only" required>
-            <span data-b30-platform="binance" data-size="48" class="inline-block"></span>
-            <p class="mt-3 font-display font-bold" data-i18n="pairing.platform.binance">Binance</p>
-            <p class="text-xs opacity-70 mt-1">Level 3 platform · min 100 USDT/sell</p>
-          </label>
-          <label class="b30-card b30-tile cursor-pointer text-center p-5">
-            <input type="radio" name="platform" value="redotpay" class="sr-only" required>
-            <span data-b30-platform="redotpay" data-size="48" class="inline-block"></span>
-            <p class="mt-3 font-display font-bold" data-i18n="pairing.platform.redotpay">RedotPay</p>
-            <p class="text-xs opacity-70 mt-1">Level 2 platform · min 50 USDT/sell</p>
-          </label>
+        <p class="text-sm opacity-70 mb-3" data-i18n="pairing.platform.hint">Choose the platform where you executed this pairing.</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pairPlatforms">
+          <!-- providers injected by JS -->
         </div>
       </div>
 
@@ -183,7 +206,7 @@
         <label class="block mt-4">
           <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
           <div class="b30-drop mt-2" data-drop="buy">
-            <input type="file" accept="image/png,image/jpeg,image/webp" name="buy_file" class="hidden" required>
+            <input type="file" accept="image/png,image/jpeg,image/webp" name="buy_file" class="hidden" data-required="1">
             <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
             <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
             <p class="text-xs opacity-60 mt-1" data-drop-name></p>
@@ -215,7 +238,7 @@
         <label class="block mt-4">
           <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
           <div class="b30-drop mt-2" data-drop="sell">
-            <input type="file" accept="image/png,image/jpeg,image/webp" name="sell_file" class="hidden" required>
+            <input type="file" accept="image/png,image/jpeg,image/webp" name="sell_file" class="hidden" data-required="1">
             <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
             <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
             <p class="text-xs opacity-60 mt-1" data-drop-name></p>
@@ -256,20 +279,11 @@
     <p class="text-sm opacity-70 mt-2" data-i18n="op.subtitle">For Level 1 you only need ONE verified P2P op — buy OR sell — on Binance or RedotPay.</p>
 
     <form id="opForm" class="mt-5 space-y-4" novalidate>
-      <!-- platform -->
+      <!-- platform (populated dynamically) -->
       <div>
         <label class="text-sm font-medium" data-i18n="op.field.platform">Platform</label>
-        <div class="grid grid-cols-2 gap-3 mt-2">
-          <label class="b30-card b30-tile cursor-pointer text-center p-4">
-            <input type="radio" name="op_platform" value="binance" class="sr-only" required>
-            <span data-b30-platform="binance" data-size="40" class="inline-block"></span>
-            <p class="mt-2 font-display font-bold text-sm" data-i18n="pairing.platform.binance">Binance</p>
-          </label>
-          <label class="b30-card b30-tile cursor-pointer text-center p-4">
-            <input type="radio" name="op_platform" value="redotpay" class="sr-only" required>
-            <span data-b30-platform="redotpay" data-size="40" class="inline-block"></span>
-            <p class="mt-2 font-display font-bold text-sm" data-i18n="pairing.platform.redotpay">RedotPay</p>
-          </label>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2" id="opPlatforms">
+          <!-- providers injected by JS -->
         </div>
       </div>
       <!-- type -->
@@ -311,7 +325,7 @@
       <label class="block">
         <span class="text-sm font-medium" data-i18n="pairing.field.screenshot">Screenshot (PNG/JPG · max 5 MB)</span>
         <div class="b30-drop mt-2" data-drop="op">
-          <input type="file" accept="image/png,image/jpeg,image/webp" name="op_file" class="hidden" required>
+          <input type="file" accept="image/png,image/jpeg,image/webp" name="op_file" class="hidden" data-required="1">
           <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-blue-500"></i>
           <p class="text-sm mt-2" data-i18n="pairing.dropHere">Drop image here or click to upload</p>
           <p class="text-xs opacity-60 mt-1" data-drop-name></p>
@@ -459,43 +473,165 @@
         </div>`;
     }).join('') || '<p class="text-sm opacity-70">You reached the highest defined level.</p>';
 
-    // Pairings list
-    const list = document.getElementById('pairingsList');
-    const empty = document.getElementById('pairingsEmpty');
-    document.getElementById('pairingsCount').textContent = pairs.length;
-    if (pairs.length === 0) {
-      list.innerHTML = ''; empty.classList.remove('hidden');
-    } else {
-      empty.classList.add('hidden');
-      pairs.sort((a,b) => b.pairing_date - a.pairing_date);
-      list.innerHTML = pairs.map(p => `
-        <div class="b30-card flex flex-wrap items-center justify-between gap-3 b30-tile">
-          <div class="flex items-center gap-3">
-            <span data-b30-platform="${p.platform}" data-size="36"></span>
-            <div>
-              <p class="text-xs uppercase opacity-60">${new Date(p.pairing_date).toLocaleString()}</p>
-              <p class="font-semibold">${p.platform[0].toUpperCase()+p.platform.slice(1)} · pair ${p.pairing_id.slice(-5)}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-4 text-sm">
-            <div class="text-right">
-              <p class="text-xs uppercase opacity-60" data-i18n="dash.profit">Profit</p>
-              <p class="font-bold ${p.profit_fiat >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${(p.profit_fiat>=0?'+':'')}${p.profit_fiat.toFixed(2)} ${p.fiat_currency}</p>
-            </div>
-            <div class="text-right">
-              <p class="text-xs uppercase opacity-60" data-i18n="dash.credits">Credits</p>
-              <p class="font-bold">${p.credits_earned}</p>
-            </div>
-            <span class="b30-pill b30-pill-${p.status}">
-              <i data-lucide="${p.status==='verified'?'check-circle':p.status==='rejected'?'x-circle':'clock'}" class="w-3 h-3"></i>
-              ${window.B30I18n.t('status.' + p.status) || p.status}
-            </span>
-          </div>
-        </div>`).join('');
-    }
+    // Combined activity list (pairings + single ops) with thumbs
+    await renderActivity(user, pairs);
+
+    // Affiliate widget
+    try {
+      const cfgAff = (cfg.affiliate_program || {});
+      const refCode = user.referral_code || '';
+      const base = location.origin + (cfg.public_base_path || '') + '/auth/index.html';
+      const link = refCode ? `${base}?ref=${encodeURIComponent(refCode)}` : '';
+      document.getElementById('affiliateCode').textContent = refCode || '—';
+      const cp = document.getElementById('btnCopyRef');
+      if (cp) {
+        cp.onclick = async () => {
+          if (!link) return;
+          try { await navigator.clipboard.writeText(link); }
+          catch(e) { /* fallback */ }
+          Swal.fire({ icon:'success', toast:true, position:'top-end', timer:1400, showConfirmButton:false,
+            title: window.B30I18n.t('affiliate.copied') || 'Affiliate link copied!' });
+        };
+      }
+      document.getElementById('affiliateSub').textContent =
+        (window.B30I18n.t('affiliate.short.sub') || 'Share to earn extra credits on every verified pairing.') +
+        (cfgAff.percent ? ` (${cfgAff.percent}%)` : '');
+    } catch(e) {}
+
     if (window.B30Logos) window.B30Logos.renderAuto();
     if (window.lucide) lucide.createIcons();
   };
+
+  // Activity = pairings + single ops, with thumbnails and filters
+  let activityCache = [];
+  let activityFilter = 'all';
+  async function renderActivity(user, pairs) {
+    const list = document.getElementById('pairingsList');
+    const empty = document.getElementById('pairingsEmpty');
+    // Pull single ops (transactions with single_op === true)
+    const txs = (await window.B30Store.listTransactions(user.id)) || [];
+    const singleOps = txs.filter(t => t.single_op === true);
+
+    // Resolve thumbnails for all referenced screenshots
+    async function thumbFor(id) {
+      if (!id) return null;
+      try { const sc = await window.B30Store.getScreenshot(id); return (sc && sc.data_url) || null; }
+      catch(e) { return null; }
+    }
+    const items = [];
+    for (const p of pairs) {
+      const thumbs = [];
+      const b = await thumbFor(p.buy_screenshot_id);
+      const s = await thumbFor(p.sell_screenshot_id);
+      if (b) thumbs.push(b); if (s) thumbs.push(s);
+      items.push({
+        kind: 'pair', id: p.pairing_id, ts: p.pairing_date,
+        title: `${p.platform[0].toUpperCase()+p.platform.slice(1)} · ${window.B30I18n.t('activity.pair') || 'Pairing'} ${p.pairing_id.slice(-5)}`,
+        platform: p.platform, status: p.status,
+        profit_fiat: p.profit_fiat || 0, fiat_currency: p.fiat_currency,
+        credits_earned: p.credits_earned || 0,
+        thumbs
+      });
+    }
+    for (const t of singleOps) {
+      const th = await thumbFor(t.screenshot_id);
+      items.push({
+        kind: 'op', id: t.id, ts: t.transaction_date || t.created_at,
+        title: `${(t.platform||'').toUpperCase()} · ${(window.B30I18n.t('op.type.'+t.type) || t.type).toString().toUpperCase()} ${t.amount_usdt} USDT`,
+        platform: t.platform, status: t.status,
+        profit_fiat: 0, fiat_currency: t.fiat_currency,
+        credits_earned: t.credits_earned || 0,
+        thumbs: th ? [th] : []
+      });
+    }
+    items.sort((a,b) => (b.ts||0) - (a.ts||0));
+    activityCache = items;
+    paintActivity();
+
+    // Wire filter buttons
+    document.querySelectorAll('[data-act-filter]').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('[data-act-filter]').forEach(b => b.classList.remove('is-active','bg-blue-500/10'));
+        btn.classList.add('is-active','bg-blue-500/10');
+        activityFilter = btn.dataset.actFilter;
+        paintActivity();
+      };
+    });
+
+    function paintActivity() {
+      const filtered = activityCache.filter(it =>
+        activityFilter === 'all' || it.status === activityFilter
+      );
+      document.getElementById('pairingsCount').textContent = `${filtered.length} / ${activityCache.length}`;
+      if (filtered.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      list.innerHTML = filtered.map(it => `
+        <div class="b30-card flex flex-wrap items-center justify-between gap-3 b30-tile">
+          <div class="flex items-center gap-3 min-w-0">
+            <span data-b30-platform="${it.platform}" data-size="36"></span>
+            <div class="min-w-0">
+              <p class="text-xs uppercase opacity-60">${new Date(it.ts).toLocaleString()}</p>
+              <p class="font-semibold truncate">${it.title}</p>
+              <p class="text-[11px] opacity-60 mt-0.5">${it.kind === 'pair' ? (window.B30I18n.t('activity.kindPair') || 'Pair (buy + sell)') : (window.B30I18n.t('activity.kindOp') || 'Single op')}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            ${it.thumbs.map(src => `<img src="${src}" class="b30-thumb" data-img-popup alt="screenshot">`).join('') || `<span class="text-[11px] opacity-60">${window.B30I18n.t('activity.noShot') || 'No screenshot'}</span>`}
+          </div>
+          <div class="flex items-center gap-4 text-sm">
+            ${it.kind === 'pair' ? `
+              <div class="text-right">
+                <p class="text-xs uppercase opacity-60">${window.B30I18n.t('dash.profit') || 'Profit'}</p>
+                <p class="font-bold ${it.profit_fiat >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${(it.profit_fiat>=0?'+':'')}${(it.profit_fiat||0).toFixed(2)} ${it.fiat_currency||''}</p>
+              </div>` : ''
+            }
+            <div class="text-right">
+              <p class="text-xs uppercase opacity-60">${window.B30I18n.t('dash.credits') || 'Credits'}</p>
+              <p class="font-bold">${it.credits_earned}</p>
+            </div>
+            <span class="b30-pill b30-pill-${it.status}">
+              <i data-lucide="${it.status==='verified'?'check-circle':it.status==='rejected'?'x-circle':'clock'}" class="w-3 h-3"></i>
+              ${window.B30I18n.t('status.' + it.status) || it.status}
+            </span>
+          </div>
+        </div>`).join('');
+      // Wire thumbnail popups
+      list.querySelectorAll('[data-img-popup]').forEach(img => {
+        img.addEventListener('click', () => {
+          Swal.fire({
+            imageUrl: img.src,
+            imageAlt: 'screenshot',
+            imageWidth: 'auto',
+            imageHeight: 'auto',
+            width: 'auto',
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: '#0f172a',
+            customClass: { image: 'rounded-lg max-h-[80vh]' }
+          });
+        });
+      });
+      if (window.B30Logos) window.B30Logos.renderAuto();
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  // ---------------- Provider tiles renderer ----------------
+  function lang() { try { return window.B30I18n.current(); } catch(e) { return 'en'; } }
+  function provName(p) { return p['name_'+lang()] || p.name_en || p.code; }
+  function renderProviderTiles(containerId, inputName, size) {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const provs = (window.B30Store.getEnabledProviders && window.B30Store.getEnabledProviders()) || [];
+    c.innerHTML = provs.map(p => `
+      <label class="b30-card b30-tile cursor-pointer text-center p-4">
+        <input type="radio" name="${inputName}" value="${p.code}" class="sr-only" required>
+        <span data-b30-platform="${p.code}" data-size="${size}" class="inline-block"></span>
+        <p class="mt-2 font-display font-bold text-sm">${provName(p)}</p>
+        <p class="text-[11px] opacity-70 mt-1">${window.B30I18n.t('pairing.minSell') || 'Min sell'}: ${p.min_usdt_sell||0} USDT · L${p.level_required||1}</p>
+      </label>`).join('');
+    if (window.B30Logos) window.B30Logos.renderAuto();
+  }
 
   // ---------------- Add Pairing wizard ----------------
   function setupPairWizard() {
@@ -545,10 +681,21 @@
         for (const f of modal.querySelectorAll(sel)) {
           if (!f.value || !f.checkValidity()) { f.focus(); f.reportValidity(); return false; }
         }
-        // file size
-        const file = modal.querySelector(`[data-pair-step="${step}"] input[type=file]`).files[0];
-        if (file && file.size > 5 * 1024 * 1024) {
+        // manual file validation (hidden file inputs)
+        const fileInput = modal.querySelector(`[data-pair-step="${step}"] input[type=file]`);
+        const file = fileInput && fileInput.files[0];
+        if (!file) {
+          Swal.fire({ icon:'warning',
+            title: window.B30I18n.t('pairing.toast.noFile') || 'Upload required',
+            text:  window.B30I18n.t('pairing.toast.noFileBody') || 'Please attach a screenshot to continue.' });
+          return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
           Swal.fire({icon:'error', title: window.B30I18n.t('pairing.toast.tooBig') || 'File too big'});
+          return false;
+        }
+        if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+          Swal.fire({icon:'error', title: window.B30I18n.t('pairing.toast.badType') || 'Only PNG / JPG / WEBP images are allowed.'});
           return false;
         }
       }
@@ -576,6 +723,7 @@
       const today = new Date().toISOString().slice(0,10);
       modal.querySelectorAll('input[type=date]').forEach(i => { if (!i.value) i.value = today; });
       fillCurrencies();
+      renderProviderTiles('pairPlatforms', 'platform', 48);
       form.reset();
       modal.querySelectorAll('[data-drop-name]').forEach(e => e.textContent = '');
       show(1);
@@ -644,6 +792,7 @@
       const today = new Date().toISOString().slice(0,10);
       modal.querySelectorAll('input[type=date]').forEach(i => { if (!i.value) i.value = today; });
       fillCurrencies();
+      renderProviderTiles('opPlatforms', 'op_platform', 40);
       form.reset();
       modal.querySelectorAll('[data-drop-name]').forEach(e => e.textContent = '');
       modal.classList.remove('hidden');
@@ -671,7 +820,19 @@
       const ses = window.B30Store.getSession(); if (!ses) return;
       const d = new FormData(form);
       if (!d.get('op_platform') || !d.get('op_type')) {
-        return Swal.fire({ icon:'warning', title:'Choose platform and type' });
+        return Swal.fire({ icon:'warning', title: window.B30I18n.t('op.toast.chooseType') || 'Choose platform and type' });
+      }
+      const opFile = form.querySelector('input[name=op_file]').files[0];
+      if (!opFile) {
+        return Swal.fire({ icon:'warning',
+          title: window.B30I18n.t('pairing.toast.noFile') || 'Upload required',
+          text:  window.B30I18n.t('pairing.toast.noFileBody') || 'Please attach a screenshot to continue.' });
+      }
+      if (opFile.size > 5 * 1024 * 1024) {
+        return Swal.fire({ icon:'error', title: window.B30I18n.t('pairing.toast.tooBig') || 'File too big' });
+      }
+      if (!/^image\/(png|jpe?g|webp)$/i.test(opFile.type)) {
+        return Swal.fire({ icon:'error', title: window.B30I18n.t('pairing.toast.badType') || 'Only PNG / JPG / WEBP images are allowed.' });
       }
       try {
         await window.B30Store.createOperation({
@@ -768,7 +929,15 @@
     await refresh();
   });
 
-  document.addEventListener('b30:lang-changed', () => refresh());
+  document.addEventListener('b30:lang-changed', () => {
+    refresh();
+    try { renderProviderTiles('pairPlatforms','platform',48); } catch(e) {}
+    try { renderProviderTiles('opPlatforms','op_platform',40); } catch(e) {}
+  });
+  document.addEventListener('b30:providers-loaded', () => {
+    try { renderProviderTiles('pairPlatforms','platform',48); } catch(e) {}
+    try { renderProviderTiles('opPlatforms','op_platform',40); } catch(e) {}
+  });
 })();
 </script>
 </body>

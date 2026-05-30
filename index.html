@@ -207,6 +207,52 @@
   </div>
 </section>
 
+<!-- ============== ECOSYSTEM ============== -->
+<section id="ecosystem" class="py-16 sm:py-20 relative overflow-hidden">
+  <div class="wb-orb wb-orb-2 w-[360px] h-[360px] top-0 right-1/4"></div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-rv>
+      <span class="wb-chip"><i data-lucide="grid-3x3" class="w-3 h-3 inline"></i> <span data-i18n="landing.eco.chip">2030B Ecosystem</span></span>
+      <h2 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="landing.eco.title">10 projects · 10 currencies · 1 credit fuel</h2>
+      <p class="mt-3 text-slate-600 dark:text-slate-400" data-i18n="landing.eco.sub">Each ecosystem project has its own internal currency. Your B30C credits unlock and activate every one of them.</p>
+    </div>
+    <div id="landingEcoGrid" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-10" data-rv data-rv-delay="1"></div>
+    <div class="text-center mt-8">
+      <a href="pages/solutions.html" class="wb-btn-primary rounded-xl px-5 py-2.5 font-semibold inline-flex items-center gap-2">
+        <span data-i18n="landing.eco.cta">Explore the 10 solutions</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CREDITS ARE KEYS ============== -->
+<section class="py-16 sm:py-20 bg-gradient-to-b from-blue-500/5 to-amber-500/5">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-rv>
+      <span class="wb-chip"><i data-lucide="key-round" class="w-3 h-3 inline"></i> <span data-i18n="landing.keys.chip">Credits = Keys</span></span>
+      <h2 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="landing.keys.title">Credits are the keys to 2030B premium features</h2>
+      <p class="mt-3 text-slate-600 dark:text-slate-400" data-i18n="landing.keys.sub">2030B refuses fiat. Your verified P2P satisfaction becomes B30C credits — and those credits unlock every premium tier in every project we build.</p>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-4 mt-10">
+      <div class="b30-card" data-rv data-rv-delay="1">
+        <span class="rounded-full bg-blue-500/15 text-blue-500 w-10 h-10 inline-flex items-center justify-center"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+        <p class="font-display font-bold mt-3" data-i18n="landing.keys.b1.title">Verified satisfaction</p>
+        <p class="text-sm opacity-80 mt-1" data-i18n="landing.keys.b1.body">Real P2P trades. Real screenshots. Real verified credits.</p>
+      </div>
+      <div class="b30-card" data-rv data-rv-delay="2">
+        <span class="rounded-full bg-amber-500/15 text-amber-500 w-10 h-10 inline-flex items-center justify-center"><i data-lucide="key-round" class="w-5 h-5"></i></span>
+        <p class="font-display font-bold mt-3" data-i18n="landing.keys.b2.title">Unlock premium tiers</p>
+        <p class="text-sm opacity-80 mt-1" data-i18n="landing.keys.b2.body">Every credit opens a door in the ecosystem — across all 10 projects.</p>
+      </div>
+      <div class="b30-card" data-rv data-rv-delay="3">
+        <span class="rounded-full bg-emerald-500/15 text-emerald-500 w-10 h-10 inline-flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5"></i></span>
+        <p class="font-display font-bold mt-3" data-i18n="landing.keys.b3.title">Earn from referrals too</p>
+        <p class="text-sm opacity-80 mt-1" data-i18n="landing.keys.b3.body">Invite friends with your affiliate link and grow your credits forever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============== JOIN WIZARD ============== -->
 <section id="join" class="py-16 sm:py-24 bg-gradient-to-b from-transparent to-blue-500/5">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -257,11 +303,11 @@
           <div class="grid sm:grid-cols-2 gap-4">
             <label class="block sm:col-span-2">
               <span class="text-sm font-medium" data-i18n="join.field.name">Full name</span>
-              <input type="text" required name="full_name" class="b30-input mt-1" placeholder="Maher Ben Ali">
+              <input type="text" required name="full_name" class="b30-input mt-1" placeholder="Maher Kaddoussi">
             </label>
             <label class="block">
               <span class="text-sm font-medium" data-i18n="join.field.email">Email</span>
-              <input type="email" required name="email" class="b30-input mt-1" placeholder="you@2030b.io">
+              <input type="email" required name="email" class="b30-input mt-1" placeholder="you@2030b.com">
             </label>
             <label class="block">
               <span class="text-sm font-medium" data-i18n="join.field.phone">Phone (optional)</span>
@@ -503,7 +549,44 @@
   // Re-render levels grid when language changes
   document.addEventListener('b30:lang-changed', () => {
     if (window.B30Config) renderLevels(window.B30Config.get());
+    renderLandingEco();
   });
+
+  // ---- Landing ecosystem grid (10 tiles) ----
+  function lang() { try { return window.B30I18n.current(); } catch(e) { return 'en'; } }
+  function loc(p, field) { return p[`${field}_${lang()}`] || p[`${field}_en`] || ''; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function renderLandingEco() {
+    const grid = document.getElementById('landingEcoGrid');
+    if (!grid || !window.B30Store) return;
+    const eco = window.B30Store.getEcosystem ? window.B30Store.getEcosystem() : { projects: [] };
+    if (!eco.projects || !eco.projects.length) { grid.innerHTML = ''; return; }
+    const STATUS_LBL = {
+      live:     (window.B30I18n.t('eco.status.live')     || 'Live'),
+      building: (window.B30I18n.t('eco.status.building') || 'Building'),
+      design:   (window.B30I18n.t('eco.status.design')   || 'Design')
+    };
+    grid.innerHTML = eco.projects.map(p => `
+      <a href="pages/solution.html?code=${encodeURIComponent(p.code)}" class="b30-card b30-tile flex flex-col items-start gap-2 p-4">
+        <div class="flex items-center justify-between w-full">
+          <span data-b30-currency="${esc(p.currency)}" data-primary="${esc(p.color_primary)}" data-accent="${esc(p.color_accent)}" data-size="40"></span>
+          <span class="mega-pill mega-pill-${esc(p.status)}">${esc(STATUS_LBL[p.status] || p.status)}</span>
+        </div>
+        <p class="font-display font-bold text-sm text-slate-900 dark:text-white mt-1">${esc(loc(p,'name'))}</p>
+        <p class="text-xs opacity-70 line-clamp-2">${esc(loc(p,'tagline'))}</p>
+        <p class="text-[11px] opacity-70 mt-auto pt-2"><strong class="text-blue-500">×${p.credit_to_currency_rate}</strong> / B30C · <span class="font-mono">${esc(p.currency)}</span></p>
+      </a>`).join('');
+    if (window.B30Logos) window.B30Logos.renderAuto();
+    if (window.lucide) lucide.createIcons();
+  }
+  document.addEventListener('b30:ecosystem-loaded', renderLandingEco);
+  // try once after store ready
+  if (window.B30Store && window.B30Store.ready) {
+    window.B30Store.ready().then(async () => {
+      if (window.B30Store.loadEcosystem) await window.B30Store.loadEcosystem();
+      renderLandingEco();
+    });
+  }
 })();
 </script>
 </body>

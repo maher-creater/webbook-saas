@@ -18,7 +18,7 @@ echo "  - system.sqlite ready.\n";
 // but a real admin user lets you future-proof for per-admin audits).
 if (!empty($argv[1])) {
     $pdo = b30_pdo();
-    $email = 'admin@2030b.io';
+    $email = 'admin@2030b.com';
     $hash  = password_hash($argv[1], PASSWORD_BCRYPT);
     $exists = $pdo->prepare('SELECT id FROM users WHERE email=?');
     $exists->execute([$email]);
@@ -28,9 +28,9 @@ if (!empty($argv[1])) {
                                total_credits,total_pairings,created_at,is_active,role)
              VALUES(?,?,?,?,?,4,0,0,?,1,"admin")'
         )->execute([$email, $hash, 'Admin', 'TN', 'en', time()]);
-        echo "  - admin@2030b.io created with provided password.\n";
+        echo "  - admin@2030b.com created with provided password.\n";
     } else {
-        echo "  - admin@2030b.io already exists.\n";
+        echo "  - admin@2030b.com already exists.\n";
     }
 }
 

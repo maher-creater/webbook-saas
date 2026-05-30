@@ -116,6 +116,9 @@
     applyDir(code);
     apply();
     readyResolve(current);
+    // Fire the same event as set(), so any component (shell, etc.) that
+    // wants to re-render after the first dictionary load gets a chance to.
+    try { document.dispatchEvent(new CustomEvent('b30:lang-changed', { detail: { code: current, initial: true } })); } catch (e) {}
   }
 
   window.B30I18n = {

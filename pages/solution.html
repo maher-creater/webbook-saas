@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solution · 2030B</title>
+<meta name="description" content="2030B ecosystem solution detail" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{
+    fontFamily: { sans:['Inter','system-ui','sans-serif'], display:['"Space Grotesk"','"Inter"','sans-serif'] }
+  }}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../css/style.css">
+
+<script src="../js/logos.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/shell.js" defer></script>
+<script src="../js/main.js" defer></script>
+</head>
+<body data-prefix="../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <a href="solutions.html" class="text-sm opacity-80 hover:text-blue-500 inline-flex items-center gap-1.5" data-i18n="solution.back">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> All solutions
+    </a>
+
+    <section id="solCard" class="b30-card mt-5 p-6 sm:p-8" data-rv>
+      <div class="flex items-start gap-5 flex-wrap">
+        <span id="solBadge" class="flex-shrink-0"></span>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 id="solName" class="font-display font-extrabold text-3xl text-slate-900 dark:text-white">—</h1>
+            <span id="solStatus" class="mega-pill mega-pill-design">—</span>
+          </div>
+          <p id="solTagline" class="opacity-80 mt-2">—</p>
+          <div class="flex items-center gap-4 mt-3 text-sm opacity-80">
+            <span><i data-lucide="hash" class="w-3.5 h-3.5 inline"></i> <span id="solCurrency" class="font-mono">—</span></span>
+            <span><i data-lucide="layers-3" class="w-3.5 h-3.5 inline"></i> <span id="solDim">—</span></span>
+            <span><i data-lucide="calendar" class="w-3.5 h-3.5 inline"></i> <span data-i18n="solution.year">Year</span> <span id="solYear">—</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="b30-key-hint mt-6">
+        <i data-lucide="key-round" class="w-4 h-4 text-amber-500"></i>
+        <span><strong id="solRate">×1</strong> / B30C — <span data-i18n="solution.rateHint">your credits unlock this much of the currency.</span></span>
+      </div>
+      <p id="solDesc" class="mt-6 leading-relaxed">—</p>
+      <blockquote id="solAyah" class="mt-6 border-l-4 border-blue-500 pl-4 italic opacity-90 hidden"></blockquote>
+
+      <div class="mt-8 grid sm:grid-cols-2 gap-3">
+        <a href="dashboard.html" class="wb-btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2 justify-center">
+          <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="solution.startEarning">Start earning credits</span>
+        </a>
+        <a href="affiliate.html" class="wb-btn-ghost rounded-xl px-5 py-2.5 text-sm font-semibold inline-flex items-center gap-2 justify-center">
+          <i data-lucide="gift" class="w-4 h-4"></i> <span data-i18n="solution.affiliate">Share &amp; earn</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="solNotFound" class="b30-card text-center py-10 hidden mt-8">
+      <i data-lucide="alert-circle" class="w-8 h-8 mx-auto text-amber-500"></i>
+      <p class="mt-3 font-display font-bold" data-i18n="solution.notFound">Solution not found</p>
+      <p class="text-sm opacity-70 mt-1" data-i18n="solution.notFoundSub">Check the URL or browse all solutions.</p>
+      <a href="solutions.html" class="wb-btn-primary rounded-lg px-4 py-2 mt-4 inline-flex font-semibold text-sm" data-i18n="solution.browseAll">Browse all</a>
+    </section>
+
+  </div>
+</main>
+
+<div data-shell-foot></div>
+
+<script src="../js/enhancements.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  function whenReady(fn) {
+    Promise.all([
+      new Promise(r => window.B30Config.onLoad(r)),
+      window.B30I18n.ready(),
+      window.B30Store.ready()
+    ]).then(([c]) => fn(c));
+  }
+  function t(k, fb){ const v = window.B30I18n.t(k); return (v && v !== k) ? v : (fb||k); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function lang() { try { return window.B30I18n.current(); } catch(e) { return 'en'; } }
+  function loc(p, field) { return p[`${field}_${lang()}`] || p[`${field}_en`] || ''; }
+  function qs(k) { return new URLSearchParams(location.search).get(k); }
+
+  async function render() {
+    const eco = window.B30Store.getEcosystem() || { projects: [] };
+    const code = (qs('code') || '').toUpperCase();
+    const p = (eco.projects || []).find(x => (x.code || '').toUpperCase() === code);
+    if (!p) {
+      document.getElementById('solCard').classList.add('hidden');
+      document.getElementById('solNotFound').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('solCard').classList.remove('hidden');
+    document.getElementById('solNotFound').classList.add('hidden');
+
+    const STATUS_LBL = {
+      live:     t('eco.status.live',     'Live'),
+      building: t('eco.status.building', 'Building'),
+      design:   t('eco.status.design',   'Design')
+    };
+    const badge = document.getElementById('solBadge');
+    badge.setAttribute('data-b30-currency', p.currency);
+    badge.setAttribute('data-primary', p.color_primary || '');
+    badge.setAttribute('data-accent', p.color_accent || '');
+    badge.setAttribute('data-size', '96');
+    document.getElementById('solName').textContent     = loc(p,'name');
+    const stEl = document.getElementById('solStatus');
+    stEl.className = 'mega-pill mega-pill-' + p.status;
+    stEl.textContent = STATUS_LBL[p.status] || p.status;
+    document.getElementById('solTagline').textContent  = loc(p,'tagline');
+    document.getElementById('solCurrency').textContent = p.currency;
+    document.getElementById('solDim').textContent      = loc(p,'dimension');
+    document.getElementById('solYear').textContent     = p.year || '—';
+    document.getElementById('solRate').textContent     = '×' + (p.credit_to_currency_rate || 1);
+    document.getElementById('solDesc').textContent     = loc(p,'description');
+    const ayah = p['ayah_' + lang()] || p.ayah_en || '';
+    const ayahEl = document.getElementById('solAyah');
+    if (ayah) { ayahEl.textContent = ayah; ayahEl.classList.remove('hidden'); }
+    else ayahEl.classList.add('hidden');
+
+    document.title = (loc(p,'name') || 'Solution') + ' · 2030B';
+    if (window.B30Logos) window.B30Logos.renderAuto();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  whenReady(async () => {
+    if (window.B30Store.loadEcosystem) await window.B30Store.loadEcosystem();
+    await render();
+  });
+  document.addEventListener('b30:ecosystem-loaded', render);
+  document.addEventListener('b30:lang-changed', render);
+})();
+</script>
+</body>
+</html>

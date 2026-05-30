@@ -41,9 +41,12 @@
  */
 (function () {
   const DB_NAME = 'b30_p2p';
-  const DB_VER  = 2;
+  const DB_VER  = 3;
   const SESSION_KEY = 'b30-session';
   const ADMIN_SESSION_KEY = 'b30-admin-session';
+  const REF_COOKIE_KEY = 'b30-ref';
+  // Default super-admin password (override via config.json -> super_admin_password)
+  const DEFAULT_SUPER_ADMIN_PW = 'super2030';
 
   let dbPromise = null;
   let sessionCache = null;
@@ -104,6 +107,25 @@
         if (!db.objectStoreNames.contains('auth_events')) {
           const s = db.createObjectStore('auth_events', { keyPath: 'id' });
           s.createIndex('user_id', 'user_id');
+          s.createIndex('created_at', 'created_at');
+        }
+        // v3 — admin tree, affiliate, referrals
+        if (!db.objectStoreNames.contains('admins')) {
+          const s = db.createObjectStore('admins', { keyPath: 'id' });
+          s.createIndex('email', 'email', { unique: true });
+          s.createIndex('role', 'role');
+          s.createIndex('parent_id', 'parent_id');
+        }
+        if (!db.objectStoreNames.contains('referrals')) {
+          const s = db.createObjectStore('referrals', { keyPath: 'id' });
+          s.createIndex('referrer_id', 'referrer_id');
+          s.createIndex('referee_id', 'referee_id', { unique: true });
+          s.createIndex('created_at', 'created_at');
+        }
+        if (!db.objectStoreNames.contains('affiliate_rewards')) {
+          const s = db.createObjectStore('affiliate_rewards', { keyPath: 'id' });
+          s.createIndex('referrer_id', 'referrer_id');
+          s.createIndex('referee_id', 'referee_id');
           s.createIndex('created_at', 'created_at');
         }
       };
@@ -206,12 +228,84 @@
     });
   }
 
-  async function register({ email, password, full_name, country_code, language, phone }) {
+  function generateReferralCode(seed) {
+    const s = (seed || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 5);
+    const r = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return ('B30' + s + r).slice(0, 12);
+  }
+
+  // ---------- Auth-API bridge (default Keys) ----------
+  // When the page was served by the PHP backend, window.B30_SERVER is injected
+  // with { csrf, api, ... }. We also fetch the public config (which includes
+  // auth_api.default_key) so register/signin can call the real backend with
+  // an X-API-Key header. If the bridge is unavailable, we fall back silently
+  // to the pure-IndexedDB demo path (so the static demo still works).
+  let __authApi = null; // { endpoint, key, csrf }
+  async function ensureAuthApi() {
+    if (__authApi !== null) return __authApi;
+    const srv = (typeof window !== 'undefined') ? window.B30_SERVER : null;
+    if (!srv || !srv.api) { __authApi = false; return false; }
+    try {
+      const res = await fetch(srv.api + '?op=config.public', { credentials: 'same-origin' });
+      const cfg = await res.json();
+      const auth = (cfg && cfg.auth_api) || null;
+      if (!auth || !auth.default_key) { __authApi = false; return false; }
+      __authApi = { endpoint: srv.api, key: auth.default_key, csrf: srv.csrf || '' };
+      return __authApi;
+    } catch (e) { __authApi = false; return false; }
+  }
+  async function authApiCall(op, payload) {
+    const a = await ensureAuthApi();
+    if (!a) return null;
+    const res = await fetch(a.endpoint + '?op=' + encodeURIComponent(op), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': a.key,
+        'X-CSRF':    a.csrf,
+      },
+      body: JSON.stringify(Object.assign({ csrf: a.csrf }, payload || {})),
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) {
+      const err = new Error((data && data.error) || ('http_' + res.status));
+      err.api = data; err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  async function register({ email, password, full_name, country_code, language, phone, ref_code }) {
     if (!email || !password) throw new Error('Email and password required');
     email = email.toLowerCase().trim();
+    // Bridge: try the backend Auth API (default key) first. If it succeeds we
+    // still mirror the user locally so the SPA dashboard works offline.
+    try {
+      const apiRes = await authApiCall('register', {
+        email, password, full_name, country_code, language, phone, ref_code,
+      });
+      if (apiRes && apiRes.ok) {
+        // success path — fall through to local mirror below
+      }
+    } catch (e) {
+      // If the backend says exists/csrf/etc., still try local — local is the source of truth in demo mode
+      if (e && e.status === 401 && e.api && e.api.error === 'api_key_invalid') {
+        throw new Error(window.B30I18n ? window.B30I18n.t('auth.api.invalid_key') : 'Default API key is missing or invalid.');
+      }
+    }
     const existing = await findUserByEmail(email);
     if (existing) throw new Error('Email already registered');
     const hash = await hashPw(password);
+    // Resolve referrer if a referral code was provided (URL/cookie/explicit)
+    let referrer = null;
+    const code = ref_code || (typeof getReferralCookie === 'function' ? getReferralCookie() : null);
+    if (code) {
+      const all = await listUsers();
+      referrer = all.find(u => u.referral_code === code) || null;
+    }
+    const myRef = generateReferralCode(full_name || email);
     const user = {
       id: uid('u_'),
       email, password_hash: hash,
@@ -230,16 +324,55 @@
       email_verified: false,
       email_verification_code: null,
       auth_provider: 'password',
+      // Affiliate program
+      referral_code: myRef,
+      referred_by: referrer ? referrer.id : null,
+      referrals_count: 0,
+      referral_credits_earned: 0,
       created_at: Date.now(), last_login: Date.now(),
       is_active: true, role: 'user'
     };
     await putUser(user);
+    // Record referral relationship
+    if (referrer) {
+      await tx(['referrals'], 'readwrite', t => t.objectStore('referrals').put({
+        id: uid('ref_'),
+        referrer_id: referrer.id,
+        referee_id: user.id,
+        ref_code: code,
+        created_at: Date.now()
+      }));
+      // Bump referrer's count
+      referrer.referrals_count = (referrer.referrals_count || 0) + 1;
+      await putUser(referrer);
+    }
     setSession(user);
     return user;
   }
 
+  // ---------- Referral cookie helpers (URL ?ref= captures into a small store) ----------
+  function setReferralCookie(code) {
+    try { localStorage.setItem(REF_COOKIE_KEY, code); } catch (e) {}
+  }
+  function getReferralCookie() {
+    try { return localStorage.getItem(REF_COOKIE_KEY) || null; } catch (e) { return null; }
+  }
+  function clearReferralCookie() {
+    try { localStorage.removeItem(REF_COOKIE_KEY); } catch (e) {}
+  }
+
   async function signIn(email, password) {
     email = (email || '').toLowerCase().trim();
+    // Bridge: hit the backend Auth API with the default key so the server-side
+    // PHP session is established. Local IndexedDB stays the SPA's source of truth.
+    try {
+      await authApiCall('signin', { email, password });
+    } catch (e) {
+      if (e && e.status === 401 && e.api && e.api.error === 'api_key_invalid') {
+        throw new Error(window.B30I18n ? window.B30I18n.t('auth.api.invalid_key') : 'Default API key is missing or invalid.');
+      }
+      // bad_credentials / disabled / network: still try local
+    }
     const user = await findUserByEmail(email);
     if (!user) throw new Error('User not found');
     const ok = await verifyPw(password, user.password_hash);
@@ -250,19 +383,183 @@
     return user;
   }
 
-  // ---------- Admin ----------
+  // Expose the helpers (so admin pages / tests can call the Auth API directly)
+  function getAuthApi() { return __authApi; }
+
+  // ---------- Admin tree (super-admin + sub-admins) ----------
+  // Permissions:
+  //   ['*'] = all permissions (super-admin)
+  //   'verify_transactions' | 'manage_users' | 'manage_keys' | 'manage_ecosystem'
+  //   'manage_affiliate' | 'manage_admins' | 'edit_config'
+  const ALL_ADMIN_PERMS = [
+    'verify_transactions',
+    'manage_users',
+    'manage_keys',
+    'manage_ecosystem',
+    'manage_affiliate',
+    'manage_admins',
+    'edit_config',
+    'view_dashboard'
+  ];
+
   function getAdminSession() {
     try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null'); } catch (e) { return null; }
   }
-  function adminSignIn(password) {
-    // Default admin password is "admin2030" — overridable in config.json via admin_password.
+  async function ensureSuperAdmin() {
+    // Seed the super-admin from config.json (or default) on first run.
     const cfg = (window.B30Config && window.B30Config.get()) || {};
-    const expected = cfg.admin_password || 'admin2030';
-    if (password !== expected) return false;
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ at: Date.now() }));
-    return true;
+    const email = (cfg.super_admin_email || 'super@2030b.com').toLowerCase();
+    const pw = cfg.super_admin_password || DEFAULT_SUPER_ADMIN_PW;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('admins', 'readwrite');
+      const idx = t.objectStore('admins').index('email');
+      const req = idx.get(email);
+      req.onsuccess = async () => {
+        if (req.result) { resolve(req.result); return; }
+        // Create initial super-admin
+        const hash = await hashPw(pw);
+        const rec = {
+          id: 'adm_super_' + Math.random().toString(36).slice(2,8),
+          email, password_hash: hash,
+          full_name: 'Super Admin',
+          role: 'super_admin',
+          permissions: ['*'],
+          parent_id: null,
+          enabled: true,
+          created_at: Date.now(),
+          last_login: null
+        };
+        const t2 = db.transaction('admins', 'readwrite');
+        t2.objectStore('admins').put(rec);
+        t2.oncomplete = () => resolve(rec);
+        t2.onerror = () => reject(t2.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function adminSignIn(emailOrPw, password) {
+    // Backwards compat: if called with a single arg, treat it as the legacy password.
+    await ensureSuperAdmin();
+    if (password === undefined) {
+      // Legacy single-arg form ("admin2030") — login the super-admin if matched.
+      const cfg = (window.B30Config && window.B30Config.get()) || {};
+      const legacyPw = cfg.admin_password || 'admin2030';
+      const superPw = cfg.super_admin_password || DEFAULT_SUPER_ADMIN_PW;
+      if (emailOrPw === legacyPw || emailOrPw === superPw) {
+        const supEmail = (cfg.super_admin_email || 'super@2030b.com').toLowerCase();
+        const adm = await findAdminByEmail(supEmail);
+        if (adm) {
+          adm.last_login = Date.now();
+          await tx(['admins'], 'readwrite', t => t.objectStore('admins').put(adm));
+          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+            at: Date.now(), id: adm.id, email: adm.email, role: adm.role, permissions: adm.permissions
+          }));
+          return adm;
+        }
+      }
+      return false;
+    }
+    // New 2-arg flow
+    const adm = await findAdminByEmail(String(emailOrPw || '').toLowerCase());
+    if (!adm || !adm.enabled) return false;
+    const ok = await verifyPw(password, adm.password_hash);
+    if (!ok) return false;
+    adm.last_login = Date.now();
+    await tx(['admins'], 'readwrite', t => t.objectStore('admins').put(adm));
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+      at: Date.now(), id: adm.id, email: adm.email, role: adm.role, permissions: adm.permissions
+    }));
+    return adm;
   }
   function adminSignOut() { localStorage.removeItem(ADMIN_SESSION_KEY); }
+
+  async function findAdminByEmail(email) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('admins', 'readonly');
+      const idx = t.objectStore('admins').index('email');
+      const req = idx.get((email || '').toLowerCase());
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function listAdmins() {
+    await ensureSuperAdmin();
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction('admins', 'readonly');
+      const req = t.objectStore('admins').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function adminHasPermission(admin, perm) {
+    if (!admin) return false;
+    const perms = admin.permissions || [];
+    return perms.includes('*') || perms.includes(perm);
+  }
+  function requireAdminPerm(perm) {
+    const sess = getAdminSession();
+    if (!sess) throw new Error('Admin sign-in required');
+    if (!adminHasPermission(sess, perm)) {
+      throw new Error('Permission denied: ' + perm);
+    }
+    return sess;
+  }
+  async function createSubAdmin({ email, password, full_name, permissions }) {
+    const sess = requireAdminPerm('manage_admins');
+    if (!email || !password) throw new Error('Email and password required');
+    email = email.toLowerCase().trim();
+    const exists = await findAdminByEmail(email);
+    if (exists) throw new Error('Admin email already exists');
+    const hash = await hashPw(password);
+    const allowed = (permissions || []).filter(p => ALL_ADMIN_PERMS.includes(p));
+    const rec = {
+      id: 'adm_' + Math.random().toString(36).slice(2,10),
+      email, password_hash: hash,
+      full_name: full_name || email.split('@')[0],
+      role: 'admin',
+      permissions: allowed.length ? allowed : ['verify_transactions', 'view_dashboard'],
+      parent_id: sess.id,
+      enabled: true,
+      created_at: Date.now(),
+      last_login: null
+    };
+    await tx(['admins'], 'readwrite', t => t.objectStore('admins').put(rec));
+    return rec;
+  }
+  async function updateSubAdmin(id, patch) {
+    requireAdminPerm('manage_admins');
+    const db = await openDB();
+    const t = db.transaction('admins', 'readwrite');
+    const store = t.objectStore('admins');
+    const cur = await reqProm(store.get(id));
+    if (!cur) throw new Error('Admin not found');
+    if (cur.role === 'super_admin' && (patch.role !== undefined || patch.enabled === false)) {
+      throw new Error('Cannot modify the super-admin role/state');
+    }
+    const next = Object.assign({}, cur);
+    if (patch.full_name !== undefined) next.full_name = patch.full_name;
+    if (patch.enabled !== undefined)   next.enabled = !!patch.enabled;
+    if (patch.permissions !== undefined) {
+      next.permissions = (patch.permissions || []).filter(p => ALL_ADMIN_PERMS.includes(p));
+    }
+    if (patch.password) next.password_hash = await hashPw(patch.password);
+    await reqProm(store.put(next));
+    return next;
+  }
+  async function deleteSubAdmin(id) {
+    requireAdminPerm('manage_admins');
+    const db = await openDB();
+    const t = db.transaction('admins', 'readwrite');
+    const store = t.objectStore('admins');
+    const cur = await reqProm(store.get(id));
+    if (!cur) return false;
+    if (cur.role === 'super_admin') throw new Error('Cannot delete the super-admin');
+    await reqProm(store.delete(id));
+    return true;
+  }
 
   // ---------- Email verification ----------
   async function startEmailVerification(userId) {
@@ -571,6 +868,7 @@
     const singleVerified = txs.filter(x => x.status === 'verified' && !x.pairing_id).length;
     credits += singleVerified * creditsSingle;
 
+    const prevCredits = u.total_credits || 0;
     u.redotpay_ops_count = rOps;
     u.binance_ops_count  = bOps;
     u.redotpay_pairings_count = rPairs;
@@ -584,6 +882,12 @@
     await new Promise(r => { t.oncomplete = r; });
     const ses = getSession();
     if (ses && ses.id === u.id) setSession(u);
+
+    // Affiliate: reward referrer on any newly-earned credits.
+    try {
+      const delta = (u.total_credits || 0) - prevCredits;
+      if (delta > 0) await maybeAwardAffiliate(u.id, null, 'op', delta);
+    } catch (e) {}
     return u;
   }
 
@@ -657,6 +961,104 @@
     // If current session belongs to this user, refresh
     const ses = getSession();
     if (ses && ses.id === user.id) setSession(user);
+
+    // Affiliate kick-back if this pairing just turned verified
+    if (allVerified) {
+      try { await maybeAwardAffiliate(user.id, pair.pairing_id, 'pairing', creditsPer); } catch (e) {}
+    }
+  }
+
+  // ---------- Affiliate program ----------
+  // Awards a percentage of newly-earned credits to the referrer on each
+  // verified pairing or single-op. Configured via config.affiliate_program.
+  async function maybeAwardAffiliate(refereeId, sourceId, sourceType, creditsEarned) {
+    const cfg = (window.B30Config && window.B30Config.get()) || {};
+    const ap = (cfg.affiliate_program || {});
+    if (!ap.enabled) return null;
+    const referee = await getUser(refereeId);
+    if (!referee || !referee.referred_by) return null;
+    const pct = +ap.percent || 10; // default 10% kick-back
+    const reward = +(creditsEarned * (pct / 100)).toFixed(4);
+    if (reward <= 0) return null;
+    const max = +ap.max_credits_per_referee_per_year || 0;
+    if (max > 0) {
+      // Sum existing rewards in last 365 days
+      const db = await openDB();
+      const all = await new Promise((res, rej) => {
+        const t = db.transaction('affiliate_rewards', 'readonly');
+        const idx = t.objectStore('affiliate_rewards').index('referee_id');
+        const req = idx.getAll(refereeId);
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+      const yearAgo = Date.now() - 365 * 86400 * 1000;
+      const tally = all.filter(r => r.created_at > yearAgo).reduce((a, b) => a + (b.credits || 0), 0);
+      if (tally + reward > max) return null;
+    }
+    const rec = {
+      id: uid('arw_'),
+      referrer_id: referee.referred_by,
+      referee_id: refereeId,
+      source_id: sourceId,
+      source_type: sourceType,    // 'pairing' | 'op'
+      credits: reward,
+      created_at: Date.now()
+    };
+    await tx(['affiliate_rewards'], 'readwrite', t => t.objectStore('affiliate_rewards').put(rec));
+    // Credit the referrer
+    const referrer = await getUser(referee.referred_by);
+    if (referrer) {
+      referrer.total_credits = +((referrer.total_credits || 0) + reward).toFixed(2);
+      referrer.referral_credits_earned = +((referrer.referral_credits_earned || 0) + reward).toFixed(2);
+      referrer.level = computeLevel(referrer, cfg);
+      await putUser(referrer);
+      // Refresh referrer's session if active
+      const ses = getSession();
+      if (ses && ses.id === referrer.id) setSession(referrer);
+    }
+    return rec;
+  }
+  async function listAffiliateRewards({ referrerId, refereeId } = {}) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const t = db.transaction('affiliate_rewards', 'readonly');
+      const store = t.objectStore('affiliate_rewards');
+      let req;
+      if (referrerId) req = store.index('referrer_id').getAll(referrerId);
+      else if (refereeId) req = store.index('referee_id').getAll(refereeId);
+      else req = store.getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function listReferrals(referrerId) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const t = db.transaction('referrals', 'readonly');
+      const store = t.objectStore('referrals');
+      const req = referrerId ? store.index('referrer_id').getAll(referrerId) : store.getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  /**
+   * Adjust a user's credits by a (positive or negative) delta. Used for penalties.
+   * Caps at 0 — total_credits never goes below 0.
+   */
+  async function adjustUserCredits(userId, delta, reason) {
+    const u = await getUser(userId);
+    if (!u) throw new Error('User not found');
+    const before = +u.total_credits || 0;
+    const after = Math.max(0, +(before + (+delta || 0)).toFixed(2));
+    u.total_credits = after;
+    u.credits_adjustments = (u.credits_adjustments || 0) + 1;
+    u.last_credit_reason = String(reason || '').slice(0, 200);
+    u.level = computeLevel(u, (window.B30Config && window.B30Config.get()) || {});
+    await putUser(u);
+    const ses = getSession();
+    if (ses && ses.id === u.id) setSession(u);
+    return { before, after };
   }
 
   function computeLevel(u, cfg) {
@@ -776,10 +1178,10 @@
 
   // ---------- Demo seed (admin convenience) ----------
   async function seedDemo() {
-    const existing = await findUserByEmail('demo@2030b.io');
+    const existing = await findUserByEmail('demo@2030b.com');
     if (existing) return existing;
     const u = await register({
-      email: 'demo@2030b.io', password: 'demo12345',
+      email: 'demo@2030b.com', password: 'demo12345',
       full_name: 'Maher (Demo)', country_code: 'TN', language: 'en'
     });
     const { buyTx: b1, sellTx: s1 } = await createPairing({
@@ -792,19 +1194,150 @@
     return await getUser(u.id);
   }
 
+  // ---------- P2P Providers ----------
+  // Loads from (in order):
+  //   1. localStorage override (admin Preview tab)
+  //   2. Backend Ajax with X-API-Key (preferred — server has live JSON)
+  //   3. Static JSON file (fallback for fully-static deploys)
+  //   4. Hard-coded 2-provider seed (last-resort)
+  let providersCache = null;
+  async function loadProviders(force) {
+    if (providersCache && !force) return providersCache;
+    try {
+      const stored = localStorage.getItem('b30-providers-override');
+      if (stored) {
+        providersCache = JSON.parse(stored);
+        try { document.dispatchEvent(new CustomEvent('b30:providers-loaded', { detail: providersCache })); } catch(e){}
+        return providersCache;
+      }
+    } catch (e) {}
+    // Try secure backend Ajax first
+    try {
+      const api = await ensureAuthApi();
+      const prefix = (document.body && document.body.dataset.prefix) || '';
+      const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+      if (api && api.api_key_required && api.default_key) headers['X-API-Key'] = api.default_key;
+      const res = await fetch(`${prefix}backend/api.php?op=providers.list`, { headers, cache: 'no-cache' });
+      if (res.ok) {
+        providersCache = await res.json();
+        try { document.dispatchEvent(new CustomEvent('b30:providers-loaded', { detail: providersCache })); } catch(e){}
+        return providersCache;
+      }
+    } catch (e) {}
+    // Fallback: static JSON file
+    try {
+      const prefix = (document.body && document.body.dataset.prefix) || '';
+      const file = ((window.B30Config && window.B30Config.get()) || {}).p2p_providers_file || 'p2p-providers.json';
+      const res = await fetch(`${prefix}${file}`, { cache: 'no-cache' });
+      if (res.ok) {
+        providersCache = await res.json();
+        try { document.dispatchEvent(new CustomEvent('b30:providers-loaded', { detail: providersCache })); } catch(e){}
+        return providersCache;
+      }
+    } catch (e) {}
+    providersCache = {
+      default_provider: 'binance',
+      providers: [
+        { code:'binance', name_en:'Binance', enabled:true, logo:'binance', level_required:3, min_usdt_sell:100, min_usdt_buy:10, fee_buy_percent:0, fee_sell_percent:0, supported_fiat:['USD','EUR','TND'], uid_regex:'^[0-9]{6,20}$', uid_label_en:'Binance UID' },
+        { code:'redotpay', name_en:'RedotPay', enabled:true, logo:'redotpay', level_required:2, min_usdt_sell:50, min_usdt_buy:5, fee_buy_percent:3, fee_sell_percent:0, supported_fiat:['USD','EUR','TND'], uid_regex:'^[A-Za-z0-9_\\-]{4,32}$', uid_label_en:'RedotPay ID' }
+      ]
+    };
+    return providersCache;
+  }
+  function getProviders() { return providersCache || { providers: [] }; }
+  function getEnabledProviders() {
+    const all = getProviders();
+    return (all.providers || []).filter(p => p.enabled !== false);
+  }
+  function getProvider(code) {
+    const all = getProviders();
+    return (all.providers || []).find(p => (p.code || '').toLowerCase() === (code || '').toLowerCase()) || null;
+  }
+
+  // ---------- Security policy ----------
+  // Same priority as providers: localStorage > backend Ajax > static JSON > fallback
+  let securityCache = null;
+  async function loadSecurity(force) {
+    if (securityCache && !force) return securityCache;
+    try {
+      const stored = localStorage.getItem('b30-security-override');
+      if (stored) { securityCache = JSON.parse(stored); return securityCache; }
+    } catch (e) {}
+    // Try secure backend Ajax first (returns only the public subset)
+    try {
+      const api = await ensureAuthApi();
+      const prefix = (document.body && document.body.dataset.prefix) || '';
+      const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+      if (api && api.api_key_required && api.default_key) headers['X-API-Key'] = api.default_key;
+      const res = await fetch(`${prefix}backend/api.php?op=security.public`, { headers, cache: 'no-cache' });
+      if (res.ok) { securityCache = await res.json(); return securityCache; }
+    } catch (e) {}
+    try {
+      const prefix = (document.body && document.body.dataset.prefix) || '';
+      const file = ((window.B30Config && window.B30Config.get()) || {}).security_file || 'security.json';
+      const res = await fetch(`${prefix}${file}`, { cache: 'no-cache' });
+      if (res.ok) { securityCache = await res.json(); return securityCache; }
+    } catch (e) {}
+    securityCache = { auth:{password_min_length:8}, rate_limits:{}, csp:{enabled:false}, upload:{max_size_bytes:5242880, allowed_mime:['image/png','image/jpeg','image/webp']} };
+    return securityCache;
+  }
+  function getSecurity() { return securityCache || {}; }
+
+  // ---------- Ecosystem currencies ----------
+  let ecoCache = null;
+  async function loadEcosystem(force) {
+    if (ecoCache && !force) return ecoCache;
+    // 1. Admin local override (set from admin → Ecosystem tab)
+    try {
+      const stored = localStorage.getItem('b30-ecosystem-override');
+      if (stored) {
+        ecoCache = JSON.parse(stored);
+        try { document.dispatchEvent(new CustomEvent('b30:ecosystem-loaded', { detail: ecoCache })); } catch(e){}
+        return ecoCache;
+      }
+    } catch (e) {}
+    // 2. Server file
+    try {
+      const prefix = (document.body && document.body.dataset.prefix) || '';
+      const file = ((window.B30Config && window.B30Config.get()) || {}).ecosystem_currencies_file || 'ecosystem-currencies.json';
+      const res = await fetch(`${prefix}${file}`, { cache: 'no-cache' });
+      if (res.ok) {
+        ecoCache = await res.json();
+        try { document.dispatchEvent(new CustomEvent('b30:ecosystem-loaded', { detail: ecoCache })); } catch(e){}
+        return ecoCache;
+      }
+    } catch (e) {}
+    ecoCache = { projects: [] };
+    try { document.dispatchEvent(new CustomEvent('b30:ecosystem-loaded', { detail: ecoCache })); } catch(e){}
+    return ecoCache;
+  }
+  function getEcosystem() { return ecoCache || { projects: [] }; }
+
   // ---------- Bootstrap ----------
-  const readyPromise = openDB().then(() => true).catch(() => true);
+  const readyPromise = openDB()
+    .then(() => ensureSuperAdmin().catch(() => null))
+    .then(() => Promise.all([
+      loadEcosystem().catch(() => null),
+      loadProviders().catch(() => null),
+      loadSecurity().catch(() => null)
+    ]))
+    .then(() => true)
+    .catch(() => true);
 
   window.B30Store = {
     ready: () => readyPromise,
+    readyPromise,
     // session
     getSession, clearSession, updateSession,
     // users
     register, signIn, getUser, listUsers, updateProfile,
     // verification
     startEmailVerification, confirmEmailVerification,
-    // admin
+    // admin tree
     adminSignIn, adminSignOut, getAdminSession,
+    listAdmins, createSubAdmin, updateSubAdmin, deleteSubAdmin,
+    adminHasPermission, requireAdminPerm,
+    ALL_ADMIN_PERMS,
     // pairings + single ops
     createPairing, createOperation,
     listPairings, listTransactions, setTransactionStatus,
@@ -813,6 +1346,19 @@
     saveScreenshot, getScreenshot,
     // api keys
     createApiKey, listApiKeys, updateApiKey, deleteApiKey, findApiKey,
+    // auth API bridge (default key)
+    ensureAuthApi, authApiCall, getAuthApi,
+    // affiliate
+    listReferrals, listAffiliateRewards,
+    setReferralCookie, getReferralCookie, clearReferralCookie,
+    // credit adjustments (penalties etc.)
+    adjustUserCredits,
+    // ecosystem
+    loadEcosystem, getEcosystem,
+    // providers
+    loadProviders, getProviders, getEnabledProviders, getProvider,
+    // security
+    loadSecurity, getSecurity,
     // fx
     exchangeRates, formatFiat,
     // settings

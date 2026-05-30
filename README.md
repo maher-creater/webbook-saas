@@ -131,7 +131,7 @@ echo "0 3 * * * www-data php /var/www/2030b/backend/cron_fx.php" \
 
 ```apache
 <VirtualHost *:443>
-    ServerName 2030b.io
+    ServerName 2030b.com
     DocumentRoot /var/www/2030b
 
     <Directory /var/www/2030b>
@@ -140,8 +140,8 @@ echo "0 3 * * * www-data php /var/www/2030b/backend/cron_fx.php" \
     </Directory>
 
     SSLEngine on
-    SSLCertificateFile      /etc/letsencrypt/live/2030b.io/fullchain.pem
-    SSLCertificateKeyFile   /etc/letsencrypt/live/2030b.io/privkey.pem
+    SSLCertificateFile      /etc/letsencrypt/live/2030b.com/fullchain.pem
+    SSLCertificateKeyFile   /etc/letsencrypt/live/2030b.com/privkey.pem
 </VirtualHost>
 ```
 
@@ -150,7 +150,7 @@ echo "0 3 * * * www-data php /var/www/2030b/backend/cron_fx.php" \
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name 2030b.io;
+    server_name 2030b.com;
     root /var/www/2030b;
     index index.html;
 
@@ -170,8 +170,8 @@ server {
     location /api/        { rewrite ^/api/(.*)$ /backend/api.php?op=$1 last; }
 
     location ~ \.php$ { fastcgi_pass unix:/var/run/php/php8.1-fpm.sock; include fastcgi.conf; }
-    ssl_certificate     /etc/letsencrypt/live/2030b.io/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/2030b.io/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/2030b.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/2030b.com/privkey.pem;
 }
 ```
 

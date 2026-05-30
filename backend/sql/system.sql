@@ -115,3 +115,71 @@ CREATE TABLE IF NOT EXISTS ecosystem_redemptions (
     created_at      INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_eredeem_user ON ecosystem_redemptions(user_id);
+
+-- ===============================================================
+-- Admin tree (super-admin + sub-admins with permissions)
+-- ===============================================================
+CREATE TABLE IF NOT EXISTS admins (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    email           TEXT NOT NULL UNIQUE,
+    password_hash   TEXT NOT NULL,
+    full_name       TEXT NOT NULL,
+    role            TEXT NOT NULL DEFAULT 'admin',          -- 'super_admin' | 'admin'
+    permissions     TEXT NOT NULL DEFAULT '[]',             -- JSON array of perm strings
+    parent_id       INTEGER REFERENCES admins(id) ON DELETE SET NULL,
+    enabled         INTEGER NOT NULL DEFAULT 1,
+    created_at      INTEGER NOT NULL,
+    last_login      INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+CREATE INDEX IF NOT EXISTS idx_admins_parent ON admins(parent_id);
+
+-- ===============================================================
+-- Referrals + affiliate rewards
+-- ===============================================================
+CREATE TABLE IF NOT EXISTS referrals (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    referrer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    referee_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    ref_code        TEXT NOT NULL,
+    created_at      INTEGER NOT NULL,
+    UNIQUE (referee_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ref_referrer ON referrals(referrer_id);
+
+CREATE TABLE IF NOT EXISTS affiliate_rewards (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    referrer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    referee_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pairing_id      TEXT,
+    credits         INTEGER NOT NULL DEFAULT 0,
+    source          TEXT NOT NULL DEFAULT 'pairing',
+    created_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_aff_referrer ON affiliate_rewards(referrer_id);
+
+-- ===============================================================
+-- Penalties (user + admin discipline, rules in penalties.json)
+-- ===============================================================
+CREATE TABLE IF NOT EXISTS penalties (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_type     TEXT NOT NULL,                          -- 'user' | 'admin'
+    target_id       INTEGER NOT NULL,
+    rule_code       TEXT NOT NULL,
+    severity        TEXT NOT NULL DEFAULT 'minor',
+    credits_delta   INTEGER NOT NULL DEFAULT 0,             -- negative = debit
+    reason          TEXT,
+    evidence        TEXT,                                   -- e.g. tx_id, pairing_id
+    status          TEXT NOT NULL DEFAULT 'open',           -- 'open' | 'appealed' | 'closed' | 'reverted'
+    issued_by       TEXT,
+    created_at      INTEGER NOT NULL,
+    closed_at       INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_pen_target ON penalties(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_pen_status ON penalties(status);
+
+-- Referral / affiliate columns on users
+ALTER TABLE users ADD COLUMN ref_code           TEXT;
+ALTER TABLE users ADD COLUMN referred_by        INTEGER;
+ALTER TABLE users ADD COLUMN affiliate_credits  INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_users_refcode ON users(ref_code);

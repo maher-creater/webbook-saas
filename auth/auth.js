@@ -187,13 +187,18 @@
         return Swal.fire({ icon:'warning', title:'Password too weak', text:'Use 8+ characters with letters and numbers.' });
       }
       try {
+        const refCode = (qs('ref') || (window.B30Store.getReferralCookie && window.B30Store.getReferralCookie()) || '').toString().trim();
         const u = await window.B30Store.register({
           email: d.get('email'),
           password: d.get('password'),
           full_name: d.get('full_name'),
           country_code: 'TN',
-          language: window.B30I18n.current()
+          language: window.B30I18n.current(),
+          ref_code: refCode || null
         });
+        if (refCode && window.B30Store.clearReferralCookie) {
+          window.B30Store.clearReferralCookie();
+        }
         await window.B30Store.startEmailVerification(u.id);
         await Swal.fire({
           icon:'info', timer:1400, showConfirmButton:false,
@@ -282,6 +287,14 @@
       showPanel('signin');
     });
   }
+
+  // ---------- referral capture ----------
+  (function captureRef () {
+    const r = qs('ref');
+    if (r && window.B30Store && window.B30Store.setReferralCookie) {
+      try { window.B30Store.setReferralCookie(r); } catch(e) {}
+    }
+  })();
 
   // ---------- boot ----------
   whenReady().then(async () => {

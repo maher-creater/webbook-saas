@@ -8,7 +8,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS transactions (
     id                  TEXT PRIMARY KEY,
-    platform            TEXT NOT NULL CHECK (platform IN ('binance','redotpay')),
+    platform            TEXT NOT NULL,                          -- dynamic provider code (see p2p-providers.json)
     type                TEXT NOT NULL CHECK (type IN ('buy','sell')),
     amount_usdt         REAL NOT NULL,
     amount_fiat         REAL NOT NULL,

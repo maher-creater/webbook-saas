@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Auth API · 2030B P2P Pairing</title>
+<meta name="description" content="Full reference for the 2030B Auth API: keys, embed, REST endpoints, errors." />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],display:['"Space Grotesk"','"Inter"','sans-serif']}}}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="../../css/style.css">
+<script src="../../js/logos.js"></script>
+<script src="../../js/config.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/store.js"></script>
+<script src="../../js/shell.js" defer></script>
+<script src="../../js/main.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  .api-row { display:grid; grid-template-columns: 90px 1fr; gap:.75rem; align-items:start; padding:.5rem 0; border-top:1px solid rgba(148,163,184,.15); }
+  .api-row:first-child { border-top:0; }
+  .api-method { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:.7rem; font-weight:700; padding:.2rem .5rem; border-radius:.4rem; text-align:center; }
+  .api-method.get  { background:#0ea5e933; color:#38bdf8; }
+  .api-method.post { background:#22c55e33; color:#4ade80; }
+  .api-path { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:.85rem; }
+</style>
+</head>
+<body data-prefix="../../" class="bg-slate-50 dark:bg-[#0a0f1f] text-slate-800 dark:text-slate-200 antialiased font-sans">
+
+<div data-shell></div>
+
+<main class="pt-28 pb-20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[260px_1fr] gap-8">
+
+    <aside class="lg:sticky lg:top-28 self-start">
+      <div class="b30-card">
+        <p class="text-[10px] uppercase tracking-widest opacity-60" data-i18n="docs.section">Documentation</p>
+        <h2 class="font-display font-bold text-lg mb-2" data-i18n="docs.api.title">Auth API</h2>
+        <ul class="space-y-1 text-sm">
+          <li><a class="hover:text-blue-500 block py-1" href="#intro" data-i18n="docs.api.toc.intro">Intro</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#auth" data-i18n="docs.api.toc.auth">Authentication</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#keys" data-i18n="docs.api.toc.keys">API keys</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#embed" data-i18n="docs.api.toc.embed">Embed snippet</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#endpoints" data-i18n="docs.api.toc.endpoints">REST endpoints</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#errors" data-i18n="docs.api.toc.errors">Errors</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#rate" data-i18n="docs.api.toc.rate">Rate limits</a></li>
+          <li><a class="hover:text-blue-500 block py-1" href="#examples" data-i18n="docs.api.toc.examples">Examples</a></li>
+        </ul>
+        <div class="mt-4 border-t border-slate-200/40 dark:border-white/10 pt-3 text-xs">
+          <a href="../api-keys.html" class="block py-0.5 hover:text-blue-500" data-i18n="docs.api.manage">→ Manage your keys</a>
+          <p class="opacity-60 mt-2 mb-1" data-i18n="docs.otherRoles">Other roles</p>
+          <a href="super-admin.html" class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.super">Super-Admin</a>
+          <a href="admin.html"       class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.admin">Sub-admin</a>
+          <a href="user.html"        class="block py-0.5 hover:text-blue-500" data-i18n="docs.role.user">User</a>
+        </div>
+      </div>
+    </aside>
+
+    <article class="space-y-10 leading-relaxed">
+
+      <header>
+        <span class="wb-chip"><i data-lucide="key-round" class="w-3 h-3 inline"></i> <span data-i18n="docs.api.chip">REST API</span></span>
+        <h1 class="mt-3 font-display font-extrabold text-3xl sm:text-4xl text-slate-900 dark:text-white" data-i18n="docs.api.h1">2030B Auth API</h1>
+        <p class="mt-2 opacity-80 max-w-3xl" data-i18n="docs.api.lead">The same backend that powers 2030B is a public REST API. Use it to embed the 2030B sign-in popup on any of your sites, read user data with consent, and integrate the credit system.</p>
+      </header>
+
+      <section id="intro" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.intro.h">Intro</h2>
+        <p class="mt-2 text-sm" data-i18n="docs.api.intro.p1">Base URL: <code>https://2030b.com/backend/api.php</code></p>
+        <p class="text-sm" data-i18n="docs.api.intro.p2">All endpoints return JSON. POST endpoints require a CSRF token (<code>?op=csrf</code>) in <code>X-CSRF</code> header. Cross-origin requests need a valid API key in <code>X-API-Key</code>.</p>
+      </section>
+
+      <section id="auth" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.auth.h">Authentication</h2>
+        <p class="mt-2 text-sm" data-i18n="docs.api.auth.p1">Two auth modes:</p>
+        <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+          <li data-i18n="docs.api.auth.b1"><strong>Session</strong> — the user logs in via the popup, a <code>B30SESS</code> cookie is set, follow-up requests reuse it.</li>
+          <li data-i18n="docs.api.auth.b2"><strong>Key</strong> — partner sites pass <code>X-API-Key: b30k_…</code> on every request. Each key is scope-restricted (<code>auth:read</code>, <code>auth:popup</code>).</li>
+        </ul>
+      </section>
+
+      <section id="keys" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.keys.h">API keys</h2>
+        <p class="mt-2 text-sm" data-i18n="docs.api.keys.p1">Manage your keys at <a href="../api-keys.html" class="text-blue-500 underline">/pages/api-keys.html</a>. Each key has:</p>
+        <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+          <li><code>id</code>, <code>label</code>, <code>key</code> (the secret).</li>
+          <li><code>scopes</code> — array of <code>auth:read</code>, <code>auth:popup</code>, …</li>
+          <li><code>origins</code> — array of allowed domains (CORS), or <code>["*"]</code>.</li>
+          <li><code>enabled</code> — boolean.</li>
+        </ul>
+        <p class="mt-3 text-sm opacity-80" data-i18n="docs.api.keys.p2">Super-admin can revoke any key at any time from the admin panel.</p>
+      </section>
+
+      <section id="embed" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.embed.h">Embed snippet</h2>
+        <p class="mt-2 text-sm" data-i18n="docs.api.embed.p1">Drop this on any HTML page:</p>
+        <pre class="rounded-lg bg-slate-900 text-slate-100 text-xs p-4 mt-3 overflow-x-auto"><code>&lt;script src="https://2030b.com/auth/embed.js" data-key="b30k_YOUR_KEY"&gt;&lt;/script&gt;
+
+&lt;button onclick="B30Auth.open()"&gt;Sign in with 2030B&lt;/button&gt;
+
+&lt;script&gt;
+  B30Auth.on('signin',  user =&gt; console.log('signed in', user));
+  B30Auth.on('signout', ()   =&gt; console.log('signed out'));
+&lt;/script&gt;</code></pre>
+      </section>
+
+      <section id="endpoints" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.ep.h">REST endpoints</h2>
+        <p class="mt-2 text-sm opacity-80" data-i18n="docs.api.ep.p1">All endpoints use <code>?op=...</code>. Mutating endpoints require <code>X-CSRF</code>.</p>
+
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.api.ep.public">Public</h3>
+        <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3 mt-2 text-sm">
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=csrf</span> — issues a CSRF token.</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=providers.list</span> — list all P2P providers.</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=security.public</span> — public security policy (password min, max upload size, etc.).</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=penalties.cfg.public</span> — penalty rules.</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=ecosystem</span> — ecosystem currencies + rates.</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=fx</span> — FX rates (USD base).</span></div>
+        </div>
+
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.api.ep.user">User auth</h3>
+        <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3 mt-2 text-sm">
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=register</span> — <code>{email,password,full_name,country_code?,language?,ref_code?}</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=signin</span> — <code>{email,password}</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=signout</span></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=user.me</span> — current user info.</span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=user.profile.update</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=user.verify_email</span> — <code>{code}</code></span></div>
+        </div>
+
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.api.ep.pairing">Pairing &amp; ops</h3>
+        <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3 mt-2 text-sm">
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=pairing.create</span> — multipart: <code>platform, buy_usdt, buy_fiat, buy_currency, buy_date_ts, sell_usdt, sell_fiat, sell_date_ts, buy_file, sell_file</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=pairing.list</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=op.create</span> — single-leg op: <code>platform, type(buy|sell), amount_usdt, amount_fiat, fiat_currency, transaction_date, op_file</code></span></div>
+        </div>
+
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.api.ep.aff">Affiliate &amp; keys</h3>
+        <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3 mt-2 text-sm">
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=user.affiliate.my</span></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=user.keys.list</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=user.keys.create</span> — <code>{label, origins?, scopes?}</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=user.keys.update</span> — <code>{id, label?, origins?, enabled?}</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=user.keys.delete</span> — <code>{id}</code></span></div>
+        </div>
+
+        <h3 class="font-display font-bold mt-4" data-i18n="docs.api.ep.admin">Admin (permission-gated)</h3>
+        <div class="rounded-lg border border-slate-200/40 dark:border-white/10 p-3 mt-2 text-sm">
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.signin</span> — <code>{email,password}</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.me</span></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.users</span> · <code>manage_users</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.pending</span> · <code>verify_transactions</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.pairings.all</span> · <code>verify_transactions</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.review</span> — <code>{user_id, tx_id, status, notes}</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.admins.list</span> · <code>manage_admins</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.admins.create</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.admins.update</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.admins.delete</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.providers.save</span> · super-admin only</span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.security.save</span> · super-admin only</span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.penalties.list</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.penalties.issue</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.penalties.close</span></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.affiliate</span> · <code>manage_affiliate</code></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.keys.list</span> · <code>manage_keys</code></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.keys.toggle</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.keys.delete</span></span></div>
+          <div class="api-row"><span class="api-method get">GET</span>  <span><span class="api-path">?op=admin.audit&amp;limit=100</span></span></div>
+          <div class="api-row"><span class="api-method post">POST</span> <span><span class="api-path">?op=admin.config</span> — <code>{config}</code> JSON blob</span></div>
+        </div>
+      </section>
+
+      <section id="errors" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.err.h">Errors</h2>
+        <div class="overflow-x-auto mt-3">
+          <table class="w-full text-sm font-mono text-xs">
+            <thead class="uppercase opacity-70 text-[10px]"><tr><th class="text-left p-2">code</th><th class="text-left p-2">status</th><th class="text-left p-2">meaning</th></tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">invalid</td><td class="p-2">400</td><td class="p-2">payload validation failed</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">csrf</td><td class="p-2">403</td><td class="p-2">missing or wrong CSRF token</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">auth_required</td><td class="p-2">401</td><td class="p-2">user must be signed in</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">admin_required</td><td class="p-2">403</td><td class="p-2">must be signed in as admin</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">perm_denied</td><td class="p-2">403</td><td class="p-2">admin missing required permission</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">super_only</td><td class="p-2">403</td><td class="p-2">endpoint restricted to super-admin</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">platform_disabled</td><td class="p-2">400</td><td class="p-2">provider is disabled in <code>p2p-providers.json</code></td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">rate_limited</td><td class="p-2">429</td><td class="p-2">per-bucket rate-limit hit</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">exists</td><td class="p-2">409</td><td class="p-2">duplicate (email, code, …)</td></tr>
+              <tr class="border-t border-slate-200/30 dark:border-white/10"><td class="p-2">server</td><td class="p-2">500</td><td class="p-2">internal error (see <code>message</code> field)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="rate" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.rate.h">Rate limits</h2>
+        <p class="mt-2 text-sm" data-i18n="docs.api.rate.p1">Per-bucket per-minute limits from <code>security.json &gt; rate_limits</code>:</p>
+        <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+          <li><code>signin_per_minute</code> — default 5</li>
+          <li><code>signup_per_minute</code> — default 3</li>
+          <li><code>admin_per_minute</code> — default 30</li>
+          <li><code>api_per_minute</code> — default 120</li>
+        </ul>
+      </section>
+
+      <section id="examples" class="b30-card">
+        <h2 class="font-display font-bold text-xl" data-i18n="docs.api.ex.h">Examples</h2>
+        <h3 class="font-display font-bold mt-3 text-sm uppercase opacity-70" data-i18n="docs.api.ex.curl">curl</h3>
+        <pre class="rounded-lg bg-slate-900 text-slate-100 text-xs p-4 mt-2 overflow-x-auto"><code># 1) Get CSRF token (sets B30SESS cookie)
+curl -c jar -b jar 'https://2030b.com/backend/api.php?op=csrf'
+
+# 2) Sign in
+CSRF=$(curl -sS -c jar -b jar 'https://2030b.com/backend/api.php?op=csrf' | jq -r .token)
+curl -sS -c jar -b jar -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF: $CSRF" \
+  -d '{"email":"me@example.com","password":"secret123"}' \
+  'https://2030b.com/backend/api.php?op=signin'
+
+# 3) Me
+curl -sS -c jar -b jar 'https://2030b.com/backend/api.php?op=user.me'</code></pre>
+
+        <h3 class="font-display font-bold mt-4 text-sm uppercase opacity-70" data-i18n="docs.api.ex.js">JavaScript (fetch)</h3>
+        <pre class="rounded-lg bg-slate-900 text-slate-100 text-xs p-4 mt-2 overflow-x-auto"><code>const API = 'https://2030b.com/backend/api.php';
+const KEY = 'b30k_YOUR_KEY';
+
+async function api(op, body, method='GET') {
+  const t = await fetch(API+'?op=csrf', {credentials:'include'}).then(r=>r.json());
+  const r = await fetch(API+'?op='+op, {
+    method, credentials:'include',
+    headers: { 'Content-Type':'application/json', 'X-CSRF': t.token, 'X-API-Key': KEY },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return r.json();
+}
+
+await api('signin', {email:'me@example.com', password:'secret123'}, 'POST');
+const me = await api('user.me');
+console.log(me);</code></pre>
+      </section>
+
+    </article>
+  </div>
+</main>
+
+<div data-shell-foot></div>
+</body>
+</html>
